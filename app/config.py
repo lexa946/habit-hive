@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: str
     DATABASE_URL: str
+    CLERK_API_KEY: str
+    CLERK_FRONTEND_API: str
 
     @model_validator(mode="before")
     def set_more_field(cls, values):

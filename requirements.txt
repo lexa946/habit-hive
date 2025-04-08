@@ -11,3 +11,6 @@ httpx
 pytest-asyncio
 databases
 aiosqlite
+greenlet
+clerk-backend-api
+pyjwt

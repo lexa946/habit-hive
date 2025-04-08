@@ -63,3 +63,9 @@ async def join_team(user_id: uuid.UUID, team_id: uuid.UUID, db: AsyncSession = D
     await db.refresh(user)
 
     return team
+
+
+@router.get("/teams", response_model=list[TeamResponse])
+async def get_all_teams(db: AsyncSession = Depends(get_db)):
+    teams = await db.scalars(select(Team))
+    return teams.all()
