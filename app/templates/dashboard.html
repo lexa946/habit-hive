@@ -1,0 +1,61 @@
+{% extends "index.html" %}
+
+{% block Body %}
+    <h1 class="text-2xl font-semibold text-gray-800 mb-4 flex justify-between items-center">
+        Привет, {{ user_name }} 👋
+    </h1>
+    <!-- Кнопка "Добавить привычку" справа -->
+    <h2 class="text-lg text-gray-600 mb-4 flex justify-between items-center">
+        Твои привычки на сегодня
+        <div class="text-right">
+            <a href="/habit/create"
+               class="inline-flex items-center justify-center bg-green-500 text-white px-4 py-2 rounded-xl hover:bg-green-600">
+                <i class="fas fa-plus mr-2"></i> Добавить
+            </a>
+        </div>
+    </h2>
+
+
+    <ul class="space-y-3">
+        {% for habit in habits %}
+            <li class="flex items-center justify-between bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition">
+        <span class="{% if habit.completed %}line-through text-green-600{% endif %}">
+            {{ habit.name }}
+        </span>
+                <form method="post" action="/toggle/{{ habit.id }}">
+                    <button type="submit"
+                            x-data="{ clicked: false }"
+                            @click="clicked = true"
+                            :class="clicked ? 'scale-110 bg-green-400 text-white' : ''"
+                            class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 transition-all duration-200
+            {% if habit.completed %}bg-green-500 text-white border-green-500{% endif %}">
+
+                        {% if habit.completed %}
+                            <i class="fas fa-check"></i>
+                        {% endif %}
+                    </button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Прогресс -->
+    <div class="mt-6">
+        <label class="block text-sm text-gray-500 mb-1">Прогресс дня</label>
+        <div class="w-full bg-gray-200 rounded-full h-3">
+            <div class="bg-green-500 h-3 rounded-full transition-all" style="width: {{ progress_percent }}%"></div>
+        </div>
+    </div>
+
+
+    <!-- Статистика -->
+    <div class="mt-6 bg-gray-50 p-4 rounded-xl text-sm text-gray-600">
+        <p><i class="fas fa-fire text-orange-400 mr-2"></i>Стрик: <strong>{{ streak }}</strong> дней</p>
+        <p><i class="fas fa-check-circle text-green-400 mr-2"></i>Выполнено:
+            <strong>{{ progress_percent }}%</strong>
+        </p>
+    </div>
+
+
+{% endblock %}
+

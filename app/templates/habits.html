@@ -1,0 +1,32 @@
+{% extends "index.html" %}
+
+{% block title %}
+    Мои привычки
+{% endblock %}
+
+{% block Body %}
+
+<h1 class="text-2xl font-semibold text-gray-800 mb-4">Мои привычки</h1>
+
+    <!-- Список привычек -->
+    <ul class="space-y-4">
+        {% for habit in habits %}
+        <li class="bg-gray-50 p-4 rounded-xl flex items-center justify-between">
+            <div>
+                <p class="font-medium">{{ habit.name }}</p>
+                <p class="text-sm text-gray-500">Выполнение: <strong>{{ habit.completed_percentage }}%</strong></p>
+            </div>
+            <a href="/habit/{{ habit.id }}" class="text-blue-500 hover:text-blue-600">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    <!-- Кнопка "Добавить привычку" -->
+<div class="text-center mt-6">
+    <a href="/habit/create" class="inline-block text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1">
+        <i class="fas fa-plus"></i> Добавить привычку
+    </a>
+</div>
+
+{% endblock %}
