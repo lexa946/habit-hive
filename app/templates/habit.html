@@ -29,12 +29,12 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                 <div class="flex items-center space-x-4">
                     <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                        <i class="fas fa-users text-2xl text-blue-500 dark:text-blue-400"></i>
+                        <i class="fas fa-chart-line text-2xl text-blue-500 dark:text-blue-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Выполнение</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Прогресс</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                            {{ habit.completed_by|length }}/{{ total_members }}
+                            {{ completed_percentage }}%
                         </p>
                     </div>
                 </div>
@@ -45,23 +45,38 @@
                         <i class="fas fa-fire text-2xl text-orange-500 dark:text-orange-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Стрик</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ habit.streak }} дней</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Выполнено дней</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                            {{ completed_by|length }} дней
+                        </p>
                     </div>
                 </div>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                 <div class="flex items-center space-x-4">
                     <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                        <i class="fas fa-calendar-check text-2xl text-green-500 dark:text-green-400"></i>
+                        <i class="fas fa-calendar text-2xl text-green-500 dark:text-green-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Последнее выполнение</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ habit.last_completed }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Создано</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                            {{ habit.created_at.strftime('%d.%m.%Y') }}
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
+
+        {% if habit.description %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Описание
+            </h2>
+            <p class="text-gray-600 dark:text-gray-400">
+                {{ habit.description }}
+            </p>
+        </div>
+        {% endif %}
 
         <!-- Participants -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
@@ -84,9 +99,20 @@
         <div class="text-center">
             <form method="post" action="/habit/{{ habit.id }}/complete">
                 <button type="submit"
-                        class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+                        class="inline-flex items-center justify-center px-6 py-3 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md
+                        {% if is_completed_today %}
+                            bg-green-600 text-white hover:bg-green-700
+                        {% else %}
+                            bg-primary-600 text-white hover:bg-primary-700
+                        {% endif %}">
                     <i class="fas fa-check mr-2"></i>
-                    <span>Отметить выполненной</span>
+                    <span>
+                        {% if is_completed_today %}
+                            Отменить выполнение
+                        {% else %}
+                            Отметить выполненной
+                        {% endif %}
+                    </span>
                 </button>
             </form>
         </div>

@@ -1,90 +1,133 @@
-<!DOCTYPE html>
-<html lang="ru" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <title>
-        {% block title %}
-            Домашний экран
-        {% endblock %}
-    </title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#4F46E5">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#EEF2FF',
-                            100: '#E0E7FF',
-                            200: '#C7D2FE',
-                            300: '#A5B4FC',
-                            400: '#818CF8',
-                            500: '#6366F1',
-                            600: '#4F46E5',
-                            700: '#4338CA',
-                            800: '#3730A3',
-                            900: '#312E81',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter var', 'sans-serif'],
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.5s ease-in-out',
-                        'slide-up': 'slideUp 0.5s ease-in-out',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        },
-                        slideUp: {
-                            '0%': { transform: 'translateY(20px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' },
-                        },
-                    },
-                }
-            }
-        }
-    </script>
-    
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Inter Font -->
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-    
-    <style>
-        [x-cloak] { display: none !important; }
-        .prose { max-width: 65ch; }
-    </style>
-</head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
-    <div class="min-h-screen flex flex-col">
-        {% include 'navbar.html' %}
-        
-        <main class="flex-1 container mx-auto px-4 py-8">
-            <div class="max-w-4xl mx-auto">
-                {% block Body %}
-                {% endblock %}
-            </div>
-        </main>
-        
-        <footer class="bg-white dark:bg-gray-800 shadow-inner mt-auto">
-            <div class="container mx-auto px-4 py-6">
-                <p class="text-center text-sm text-gray-600 dark:text-gray-400">
-                    © 2024 Habit Hive. Все права защищены.
-                </p>
-            </div>
-        </footer>
+{% extends "base.html" %}
+
+{% block title %}
+    Habit Hive
+{% endblock %}
+
+{% block Body %}
+<div class="animate-fade-in">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Добро пожаловать в Habit Hive
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">
+                Сегодня {{ today }}. Отметьте выполненные привычки
+            </p>
+        </div>
+        <div class="flex space-x-4 mt-4 md:mt-0">
+            <a href="/habits/new"
+               class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+                <i class="fas fa-plus mr-2"></i>
+                <span>Добавить привычку</span>
+            </a>
+            <a href="/habits"
+               class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                <i class="fas fa-list mr-2"></i>
+                <span>Все привычки</span>
+            </a>
+        </div>
     </div>
 
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</body>
-</html>
+    <!-- Progress Summary -->
+    {% if habits %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                    <i class="fas fa-chart-line text-2xl text-blue-500 dark:text-blue-400"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Всего привычек</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                        {{ habits|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                    <i class="fas fa-check text-2xl text-green-500 dark:text-green-400"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Выполнено сегодня</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                        {{ habits|selectattr('is_completed')|list|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                    <i class="fas fa-fire text-2xl text-orange-500 dark:text-orange-400"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Прогресс</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                        {{ ((habits|selectattr('is_completed')|list|length / habits|length) * 100)|round|int }}%
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Habits List -->
+    <div class="space-y-4">
+        {% for habit in habits %}
+        <div class="group flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow duration-200">
+            <div class="flex-1">
+                <div class="flex items-center space-x-3">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        {{ habit.name }}
+                    </h3>
+                    {% if habit.is_completed %}
+                    <span class="px-2 py-1 text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900 rounded-full">
+                        Выполнено
+                    </span>
+                    {% endif %}
+                </div>
+                {% if habit.description %}
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {{ habit.description }}
+                </p>
+                {% endif %}
+            </div>
+            <form method="post" action="/toggle/{{ habit.id }}" class="flex-shrink-0">
+                <button type="submit"
+                        class="w-12 h-12 flex items-center justify-center rounded-full border-2 transition-all duration-200
+                        {% if habit.is_completed %}
+                            bg-green-100 dark:bg-green-900 border-green-500 dark:border-green-400 text-green-500 dark:text-green-400
+                        {% else %}
+                            border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500
+                        {% endif %}">
+                    <i class="fas fa-check text-xl"></i>
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not habits %}
+    <div class="text-center py-12">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
+            <i class="fas fa-list-check text-2xl text-gray-400 dark:text-gray-500"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            У вас пока нет привычек
+        </h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">
+            Начните добавлять привычки, чтобы отслеживать свой прогресс
+        </p>
+        <a href="/habits/new"
+           class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200">
+            <i class="fas fa-plus mr-2"></i>
+            <span>Добавить первую привычку</span>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

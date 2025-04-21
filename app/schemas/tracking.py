@@ -16,4 +16,4 @@ class TrackingResponse(BaseModel):
     date: date
 
     class Config:
-        orm_mode = True
+        from_attributes = True
