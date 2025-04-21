@@ -16,4 +16,4 @@ class UserResponse(BaseModel):
     team_id: UUID | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

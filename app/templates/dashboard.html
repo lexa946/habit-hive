@@ -35,9 +35,6 @@
                 </span>
                 <form method="post" action="/toggle/{{ habit.id }}" class="flex-shrink-0">
                     <button type="submit"
-                            x-data="{ clicked: false }"
-                            @click="clicked = true"
-                            :class="clicked ? 'scale-110 bg-primary-500' : ''"
                             class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 transition-all duration-200
                             {% if habit.completed %}bg-primary-500 text-white border-primary-500{% else %}hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
                         {% if habit.completed %}

@@ -47,38 +47,29 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
             "id": habit.id,
             "name": habit.name,
             "description": habit.description,
-            "is_completed": habit.id in completed_habits_ids
+            "completed": habit.id in completed_habits_ids
         })
     
+    # Вычисляем прогресс
+    completed = sum(1 for h in habits_with_status if h["completed"])
+    progress = int(completed / len(habits_with_status) * 100) if habits_with_status else 0
+    
+    # Вычисляем стрик (количество дней подряд с выполнением хотя бы одной привычки)
+    # TODO: Реализовать правильный подсчет стрика
+    streak = 7  # Временное значение
+
     return templates.TemplateResponse("index.html", {
         "request": request,
+        "user_name": user.name,
         "habits": habits_with_status,
+        "progress_percent": progress,
+        "streak": streak,
         "today": today.strftime("%d.%m.%Y")
     })
 
 @router.get("/login", response_class=HTMLResponse)
 async def login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
-
-@router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    # Здесь пока мок-данные
-    habits = [
-        {"id": 1, "name": "Утренняя зарядка", "completed": True},
-        {"id": 2, "name": "Пить воду", "completed": False},
-        {"id": 3, "name": "Читать 10 мин", "completed": True},
-    ]
-
-    completed = sum(1 for h in habits if h["completed"])
-    progress = int(completed / len(habits) * 100)
-
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "user_name": "Алексей",
-        "habits": habits,
-        "progress_percent": progress,
-        "streak": 7
-    })
 
 @router.get("/team", response_class=HTMLResponse)
 async def team_page(request: Request):
@@ -123,10 +114,12 @@ async def user_habits(request: Request, db: AsyncSession = Depends(get_db)):
     habits = await db.scalars(
         select(Habit).where(Habit.user_id == user.id)
     )
+    habits_list = habits.all()
+    await db.commit()
     
     return templates.TemplateResponse("habits.html", {
         "request": request,
-        "habits": habits.all()
+        "habits": habits_list
     })
 
 @router.get("/habit/{habit_id}", response_class=HTMLResponse)
