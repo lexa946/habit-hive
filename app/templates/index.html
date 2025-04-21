@@ -17,7 +17,7 @@
             </p>
         </div>
         <a href="/habits/new"
-           class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+           class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm hover:shadow-md">
             <i class="fas fa-plus mr-2"></i>
             <span>Добавить привычку</span>
         </a>
@@ -40,7 +40,7 @@
                 <form method="post" action="/toggle/{{ habit.id }}" class="flex-shrink-0">
                     <button type="submit"
                             class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 transition-all duration-200
-                            {% if habit.completed %}bg-primary-500 text-white border-primary-500{% else %}hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+                            {% if habit.completed %}bg-green-500 text-white border-green-500{% else %}hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
                         {% if habit.completed %}
                             <i class="fas fa-check"></i>
                         {% else %}
@@ -67,7 +67,7 @@
                     <span>100%</span>
                 </div>
                 <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                    <div class="bg-primary-500 h-3 rounded-full transition-all duration-500" 
+                    <div class="bg-green-500 h-3 rounded-full transition-all duration-500" 
                          style="width: {{ progress_percent }}%"></div>
                 </div>
             </div>
