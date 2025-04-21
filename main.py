@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
@@ -6,24 +7,25 @@ from starlette.staticfiles import StaticFiles
 from uvicorn import run
 from app.main import app
 
-run(app, host='127.0.0.1', port=8000)
-
+# Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Разрешаем фронту доступ
+    allow_origins=["http://localhost:3000"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Путь до build
-frontend_path = os.path.join(os.path.dirname(__file__), "frontend", "build")
+# Serve frontend files
+@app.get("/{path:path}")
+async def serve_frontend(path: str):
+    static_path = Path("app/static") / path
+    if static_path.exists():
+        return FileResponse(static_path)
+    return FileResponse("app/static/index.html")
 
-# Подключаем как статические файлы
-app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
-
-# На любой неизвестный путь отдаём index.html (SPA-маршрутизация)
-@app.get("/{full_path:path}")
-async def serve_spa():
-    return FileResponse(os.path.join(frontend_path, "index.html"))
+if __name__ == "__main__":
+    run(app, host='127.0.0.1', port=8000)

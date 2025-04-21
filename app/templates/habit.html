@@ -5,43 +5,91 @@
 {% endblock %}
 
 {% block Body %}
-    <div class="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-2xl">
-        <!-- Кнопка "Вернуться к привычкам" -->
-        <div class="text-center mt-4">
-            <a href="/habits" class="inline-block text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1">
-                <i class="fas fa-arrow-left"></i> Вернуться
-            </a>
+<div class="animate-fade-in">
+    <div class="max-w-3xl mx-auto">
+        <!-- Back Button -->
+        <a href="/habits" 
+           class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 mb-6 transition-colors duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>
+            <span>Вернуться к привычкам</span>
+        </a>
+
+        <!-- Habit Header -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {{ habit.name }}
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">
+                Отслеживайте прогресс выполнения привычки
+            </p>
         </div>
 
-        <h1 class="text-2xl font-semibold text-gray-800 mb-4">Привычка: {{ habit.name }}</h1>
-
-        <!-- Статистика по привычке -->
-        <div class="bg-gray-50 p-4 rounded-xl mb-6">
-            <p class="text-sm text-gray-600">Выполнение: <strong>{{ habit.completed_by|length }}
-                из {{ total_members }}</strong></p>
-            <p class="text-sm text-gray-600">Стрик: <strong>{{ habit.streak }}</strong> дней</p>
-            <p class="text-sm text-gray-600">Последний выполненный: <strong>{{ habit.last_completed }}</strong></p>
-        </div>
-
-        <!-- Участники -->
-        <h2 class="text-lg text-gray-600 mb-2">Участники</h2>
-        <div class="flex flex-wrap gap-4 mb-6">
-            {% for user in habit.completed_by %}
-                <div class="flex items-center space-x-2">
-                    <img src="{{ user.avatar_url }}" alt="avatar" class="w-10 h-10 rounded-full">
-                    <span>{{ user.name }}</span>
+        <!-- Habit Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                        <i class="fas fa-users text-2xl text-blue-500 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Выполнение</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                            {{ habit.completed_by|length }}/{{ total_members }}
+                        </p>
+                    </div>
                 </div>
-            {% endfor %}
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                        <i class="fas fa-fire text-2xl text-orange-500 dark:text-orange-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Стрик</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ habit.streak }} дней</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                        <i class="fas fa-calendar-check text-2xl text-green-500 dark:text-green-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Последнее выполнение</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ habit.last_completed }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Кнопка "Отметить выполненной" -->
-        <div class="text-center mt-6">
+        <!-- Participants -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Участники
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {% for user in habit.completed_by %}
+                <div class="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <img src="{{ user.avatar_url }}" 
+                         alt="{{ user.name }}"
+                         class="w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 shadow-sm mb-3">
+                    <span class="text-sm font-medium text-gray-900 dark:text-white text-center">{{ user.name }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Complete Button -->
+        <div class="text-center">
             <form method="post" action="/habit/{{ habit.id }}/complete">
                 <button type="submit"
-                        class="inline-block bg-green-500 text-white px-4 py-2 rounded-xl hover:bg-green-600 transition">
-                    <i class="fas fa-check mr-2"></i>Отметить выполненной
+                        class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+                    <i class="fas fa-check mr-2"></i>
+                    <span>Отметить выполненной</span>
                 </button>
             </form>
         </div>
     </div>
+</div>
 {% endblock %}

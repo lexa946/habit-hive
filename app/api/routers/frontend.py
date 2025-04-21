@@ -1,7 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.requests import Request
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+from app.models.user import User
+from app.models.habit import Habit
+from app.database import get_db
 
 router = APIRouter(tags=["Фронт"])
 templates = Jinja2Templates(directory="app/templates")
@@ -68,17 +74,19 @@ async def team_page(request: Request):
 
 
 @router.get("/habits", response_class=HTMLResponse)
-async def user_habits(request: Request):
-    # Пример данных для привычек пользователя, в реальности подставишь данные из базы данных
-    user_habits = [
-        {"id": 1, "name": "Утренняя зарядка", "completed_percentage": 85},
-        {"id": 2, "name": "Чтение книги", "completed_percentage": 70},
-        {"id": 3, "name": "Медитация", "completed_percentage": 90},
-    ]
-
+async def user_habits(request: Request, db: AsyncSession = Depends(get_db)):
+    # TODO: Временное решение - используем первого пользователя
+    user = await db.scalar(select(User).limit(1))
+    if not user:
+        raise HTTPException(status_code=404, detail="No users found in database")
+    
+    habits = await db.scalars(
+        select(Habit).where(Habit.user_id == user.id)
+    )
+    
     return templates.TemplateResponse("habits.html", {
         "request": request,
-        "habits": user_habits
+        "habits": habits.all()
     })
 
 @router.get("/habit/{habit_id}", response_class=HTMLResponse)
@@ -101,3 +109,33 @@ async def habit_page(request: Request, habit_id: int):
         "habit": fake_habit,
         "total_members": total_members
     })
+
+@router.get("/habits/new", response_class=HTMLResponse)
+async def new_habit(request: Request):
+    return templates.TemplateResponse("habit_new.html", {
+        "request": request
+    })
+
+@router.post("/habits/new", response_class=HTMLResponse)
+async def create_habit(request: Request, db: AsyncSession = Depends(get_db)):
+    form_data = await request.form()
+    name = form_data.get("name")
+    description = form_data.get("description", "")
+    
+    # TODO: Временное решение - используем первого пользователя
+    # В будущем нужно будет получать текущего пользователя из сессии
+    user = await db.scalar(select(User).limit(1))
+    if not user:
+        raise HTTPException(status_code=404, detail="No users found in database")
+    
+    new_habit = Habit(
+        name=name,
+        description=description,
+        user_id=user.id
+    )
+    
+    db.add(new_habit)
+    await db.commit()
+    await db.refresh(new_habit)
+    
+    return RedirectResponse(url="/habits", status_code=303)

@@ -1,14 +1,93 @@
-    <nav class="bg-white shadow mb-6">
-        <div class="max-w-xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="/dashboard" class="text-lg font-semibold text-black-600 flex items-center gap-2">
-                <i class="fas fa-leaf text-green-500"></i> Habit Hive
+<nav class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
+    <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between h-16">
+            <!-- Logo -->
+            <a href="/dashboard" class="flex items-center space-x-2 group">
+                <i class="fas fa-leaf text-primary-600 dark:text-primary-400 text-xl group-hover:rotate-12 transition-transform duration-300"></i>
+                <span class="text-xl font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+                    Habit Hive
+                </span>
             </a>
-            <div class="flex items-center gap-4 text-gray-600 text-sm">
-                <a href="/dashboard" class="hover:text-blue-600"><i class="fas fa-home"></i></a>
-                <a href="/team" class="hover:text-blue-600"><i class="fas fa-users"></i></a>
-                <a href="/habits" class="hover:text-blue-600"><i class="fas fa-list-check"></i></a>
-                <a href="/settings" class="hover:text-blue-600"><i class="fas fa-cog"></i></a>
-                <a href="/logout" class="hover:text-red-500"><i class="fas fa-sign-out-alt"></i></a>
+
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="/dashboard" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </a>
+                <a href="/team" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Команда</span>
+                </a>
+                <a href="/habits" class="nav-link">
+                    <i class="fas fa-list-check"></i>
+                    <span>Привычки</span>
+                </a>
+                <a href="/settings" class="nav-link">
+                    <i class="fas fa-cog"></i>
+                    <span>Настройки</span>
+                </a>
+                <a href="/logout" class="nav-link text-red-500 hover:text-red-600 dark:hover:text-red-400">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Выйти</span>
+                </a>
+            </div>
+
+            <!-- Mobile menu button -->
+            <div class="md:hidden">
+                <button @click="isOpen = !isOpen" class="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
             </div>
         </div>
-    </nav>
+
+        <!-- Mobile Navigation -->
+        <div x-show="isOpen" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 transform -translate-y-2"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 transform translate-y-0"
+             x-transition:leave-end="opacity-0 transform -translate-y-2"
+             class="md:hidden py-2 space-y-2">
+            <a href="/dashboard" class="mobile-nav-link">
+                <i class="fas fa-home"></i>
+                <span>Главная</span>
+            </a>
+            <a href="/team" class="mobile-nav-link">
+                <i class="fas fa-users"></i>
+                <span>Команда</span>
+            </a>
+            <a href="/habits" class="mobile-nav-link">
+                <i class="fas fa-list-check"></i>
+                <span>Привычки</span>
+            </a>
+            <a href="/settings" class="mobile-nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Настройки</span>
+            </a>
+            <a href="/logout" class="mobile-nav-link text-red-500 hover:text-red-600 dark:hover:text-red-400">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Выйти</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<style>
+    .nav-link {
+        @apply flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200;
+    }
+    
+    .mobile-nav-link {
+        @apply flex items-center space-x-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200;
+    }
+</style>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('navbar', () => ({
+            isOpen: false
+        }))
+    })
+</script>

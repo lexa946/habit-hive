@@ -1,56 +1,95 @@
 {% extends "index.html" %}
 
 {% block Body %}
-
-
-
-
-        <h1 class="text-2xl font-semibold text-gray-800 mb-4">Команда: {{ team.name }}</h1>
-
-        <!-- Участники -->
-        <h2 class="text-lg text-gray-600 mb-2">Участники</h2>
-        <div class="flex flex-wrap gap-4 mb-6">
-            {% for member in team.members %}
-                <div class="flex items-center space-x-2">
-                    <img src="{{ member.avatar_url }}" alt="avatar" class="w-10 h-10 rounded-full">
-                    <span>{{ member.name }}</span>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Суммарная статистика -->
-        <div class="bg-gray-50 p-4 rounded-xl mb-6">
-            <p><i class="fas fa-fire text-orange-400 mr-2"></i> Общий стрик: <strong>{{ team.streak }}</strong> дней</p>
-            <p><i class="fas fa-check-circle text-green-500 mr-2"></i> Выполнение: <strong>{{ team.completion_percent }}%</strong>
+<div class="animate-fade-in">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Команда: {{ team.name }}
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">
+                Отслеживайте прогресс вашей команды
             </p>
         </div>
+        <a href="/invite"
+           class="mt-4 md:mt-0 inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+            <i class="fas fa-user-plus mr-2"></i>
+            <span>Пригласить участника</span>
+        </a>
+    </div>
 
-        <!-- Привычки команды -->
-        <h2 class="text-lg text-gray-600 mb-2">Привычки команды</h2>
-        <ul class="space-y-3">
+    <!-- Team Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                    <i class="fas fa-fire text-2xl text-orange-500 dark:text-orange-400"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Общий стрик</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ team.streak }} дней</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                    <i class="fas fa-check-circle text-2xl text-green-500 dark:text-green-400"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Выполнение</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ team.completion_percent }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Members -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Участники команды
+        </h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {% for member in team.members %}
+            <div class="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <img src="{{ member.avatar_url }}" alt="{{ member.name }}" 
+                     class="w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 shadow-sm mb-3">
+                <span class="text-sm font-medium text-gray-900 dark:text-white text-center">{{ member.name }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Team Habits -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Привычки команды
+        </h2>
+        <div class="space-y-4">
             {% for habit in team.habits %}
-                <li class="bg-gray-50 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p class="font-medium">{{ habit.name }}</p>
-                        <p class="text-sm text-gray-500">Выполнено {{ habit.completed_by|length }}
-                            из {{ team.members|length }}</p>
+            <div class="group bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div class="mb-4 sm:mb-0">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                            {{ habit.name }}
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Выполнено {{ habit.completed_by|length }} из {{ team.members|length }}
+                        </p>
                     </div>
-                    <div class="flex space-x-2 mt-2 sm:mt-0">
+                    <div class="flex -space-x-2">
                         {% for user in habit.completed_by %}
-                            <img src="{{ user.avatar_url }}" class="w-8 h-8 rounded-full border-2 border-green-400"
-                                 title="{{ user.name }}">
+                        <img src="{{ user.avatar_url }}" 
+                             alt="{{ user.name }}"
+                             class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 shadow-sm"
+                             title="{{ user.name }}">
                         {% endfor %}
                     </div>
-                </li>
+                </div>
+            </div>
             {% endfor %}
-        </ul>
-
-        <!-- Кнопка "Пригласить" -->
-        <div class="mt-6 text-center">
-            <a href="/invite"
-               class="inline-block bg-green-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition">
-                <i class="fas fa-user-plus mr-2"></i>Пригласить участника
-            </a>
         </div>
-
+    </div>
+</div>
 {% endblock %}
