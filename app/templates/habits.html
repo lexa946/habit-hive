@@ -24,46 +24,43 @@
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Активные привычки
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for habit in habits %}
                 {% if not habit.is_completed %}
-                <div class="group bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-                    <div class="p-6">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                    {{ habit.name }}
-                                </h3>
-                                {% if habit.description %}
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    {{ habit.description }}
-                                </p>
-                                {% endif %}
-                                <div class="flex items-center space-x-2">
-                                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                        <div class="bg-green-500 h-2 rounded-full transition-all duration-500"
-                                             style="width: {{ habit.mastery_progress }}%"></div>
-                                    </div>
-                                    <span class="text-sm font-medium text-green-600 dark:text-green-400">
-                                        {{ habit.mastery_progress }}%
-                                    </span>
-                                </div>
-                                {% if habit.target_date %}
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                    Цель: {{ habit.target_date.strftime('%d.%m.%Y') }}
-                                </p>
-                                {% endif %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow duration-200">
+                    <div class="grid grid-rows-[auto_1fr_auto] h-full">
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
+                                {{ habit.name[:100] }}{% if habit.name|length > 100 %}...{% endif %}
+                            </h3>
+                            <div class="flex space-x-2">
+                                <a href="/habit/{{ habit.id }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                             </div>
-                            <a href="/habit/{{ habit.id }}"
-                               class="ml-4 p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-                                <i class="fas fa-arrow-right"></i>
-                            </a>
                         </div>
-                    </div>
-                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700">
-                        <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-                            <span>Создано</span>
-                            <span class="font-medium">{{ habit.created_at.strftime('%d.%m.%Y') }}</span>
+
+                        <!-- Progress -->
+                        <div class="flex items-center space-x-4 self-center mb-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                    <i class="fas fa-chart-line text-2xl text-blue-500 dark:text-blue-400"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Прогресс</p>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {{ habit.mastery_progress }}%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Создано: {{ habit.created_at.strftime('%d.%m.%Y') }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -93,11 +90,6 @@
                                         Завершено
                                     </span>
                                 </div>
-                                {% if habit.description %}
-                                <p class="text-sm text-gray-600 dark:text-gray-400">
-                                    {{ habit.description }}
-                                </p>
-                                {% endif %}
                             </div>
                             <a href="/habit/{{ habit.id }}"
                                class="ml-4 p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">

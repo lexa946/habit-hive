@@ -3,14 +3,16 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from uuid import UUID
 from datetime import datetime, timedelta, date
+import uuid
 
 from app.models.user import User
 from app.models.habit import Habit
 from app.models.tracking import Tracking
 from app.models.user_settings import UserSettings
+from app.models.congratulation import Congratulation
 from app.database import get_db
 
 router = APIRouter(tags=["Фронт"])
@@ -25,6 +27,8 @@ async def calculate_streak(user: User, db: AsyncSession) -> None:
         user.current_streak = 0
     if user.max_streak is None:
         user.max_streak = 0
+    if user.last_completed_date is None:
+        user.last_completed_date = today
     
     # Get all active habits for the user
     habits = await db.scalars(
@@ -55,36 +59,54 @@ async def calculate_streak(user: User, db: AsyncSession) -> None:
     all_completed = all(habit.id in completed_habits_ids for habit in habits_list)
     
     if all_completed:
-        if user.last_completed_date is None:
-            # First completion
-            user.current_streak = 1
-            user.max_streak = max(user.max_streak, 1)
-        elif (today - user.last_completed_date).days == 1:
-            # Consecutive day
-            user.current_streak += 1
+        # Check if we already congratulated today
+        existing_congratulation = await db.scalar(
+            select(Congratulation).where(
+                and_(
+                    Congratulation.user_id == user.id,
+                    Congratulation.type == "all_habits_completed",
+                    Congratulation.created_at >= today
+                )
+            )
+        )
+        
+        if not existing_congratulation:
+            # Create new congratulation
+            congratulation = Congratulation(
+                id=UUID(str(uuid.uuid4())),
+                user_id=user.id,
+                message="Поздравляем! Вы выполнили все свои привычки за сегодня! 🎉",
+                type="all_habits_completed"
+            )
+            db.add(congratulation)
+            await db.commit()
+        
+        # Update streak only if this is the first completion today
+        if user.last_completed_date != today:
+            # If last completion was yesterday, increment streak
+            if (today - user.last_completed_date).days == 1:
+                user.current_streak += 1
+            # If last completion was more than a day ago, reset streak
+            elif (today - user.last_completed_date).days > 1:
+                user.current_streak = 1
+            
             user.max_streak = max(user.max_streak, user.current_streak)
-        elif (today - user.last_completed_date).days > 1:
-            # Streak broken, start new streak
-            user.current_streak = 1
-        user.last_completed_date = today
+            user.last_completed_date = today
+            await db.commit()
     else:
-        if user.last_completed_date and (today - user.last_completed_date).days > 1:
-            # Streak broken
+        # Reset streak if not all habits completed
+        if user.last_completed_date != today:
             user.current_streak = 0
-    
-    await db.commit()
+            await db.commit()
 
 @router.get("/", response_class=HTMLResponse)
-async def home(request: Request, db: AsyncSession = Depends(get_db)):
+async def index(request: Request, db: AsyncSession = Depends(get_db)):
     # TODO: Временное решение - используем первого пользователя
     user = await db.scalar(select(User).limit(1))
     if not user:
         raise HTTPException(status_code=404, detail="No users found in database")
     
-    # Calculate streak
-    await calculate_streak(user, db)
-    
-    # Получаем все активные привычки пользователя (не завершенные)
+    # Get user's habits
     habits = await db.scalars(
         select(Habit).where(
             and_(
@@ -95,7 +117,7 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
     )
     habits_list = habits.all()
     
-    # Получаем все трекинги за сегодня
+    # Get today's trackings
     today = datetime.now().date()
     today_trackings = await db.scalars(
         select(Tracking).where(
@@ -107,63 +129,64 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
     )
     completed_habits_ids = {tracking.habit_id for tracking in today_trackings.all()}
     
-    # Формируем список привычек с информацией о выполнении и прогрессе
-    habits_with_status = []
-    total_mastery_progress = 0
+    # Calculate progress
+    completed = sum(1 for habit in habits_list if habit.id in completed_habits_ids)
+    progress_percent = int((completed / len(habits_list)) * 100) if habits_list else 0
     
-    for habit in habits_list:
-        # Получаем все трекинги для привычки
-        habit_trackings = await db.scalars(
-            select(Tracking).where(Tracking.habit_id == habit.id)
-        )
-        trackings_list = habit_trackings.all()
-        
-        # Вычисляем прогресс освоения для каждой привычки
-        if habit.target_date:
-            total_days = (habit.target_date - habit.created_at.date()).days
-            days_passed = (today - habit.created_at.date()).days
-            if total_days > 0:
-                progress = min(100, int((len(trackings_list) / total_days) * 100))
-                habit.mastery_progress = progress
-        else:
-            total_days = 30
-            completed_days = len(trackings_list)
-            progress = min(100, int((completed_days / total_days) * 100))
-            habit.mastery_progress = progress
-        
-        total_mastery_progress += habit.mastery_progress
-        
-        habits_with_status.append({
-            "id": habit.id,
-            "name": habit.name,
-            "description": habit.description,
-            "completed": habit.id in completed_habits_ids,
-            "mastery_progress": habit.mastery_progress
-        })
-    
-    await db.commit()
-    
-    # Вычисляем средний прогресс освоения
+    # Calculate average mastery progress
+    total_mastery_progress = sum(habit.mastery_progress for habit in habits_list)
     avg_mastery_progress = int(total_mastery_progress / len(habits_list)) if habits_list else 0
     
-    # Вычисляем прогресс на сегодня
-    completed = sum(1 for h in habits_with_status if h["completed"])
-    progress = int(completed / len(habits_with_status) * 100) if habits_with_status else 0
+    # Mark completed habits
+    for habit in habits_list:
+        habit.completed = habit.id in completed_habits_ids
     
-    # Проверяем, все ли привычки выполнены сегодня
-    all_habits_completed = completed == len(habits_with_status) if habits_with_status else False
+    # Get completed habits (limited to 4)
+    completed_habits_query = await db.scalars(
+        select(Habit).where(
+            and_(
+                Habit.user_id == user.id,
+                Habit.is_completed == True
+            )
+        ).order_by(Habit.created_at.desc()).limit(4)
+    )
+    completed_habits = completed_habits_query.all()
+    
+    # Check if there are more completed habits
+    total_completed_count = await db.scalar(
+        select(func.count()).select_from(Habit).where(
+            and_(
+                Habit.user_id == user.id,
+                Habit.is_completed == True
+            )
+        )
+    )
+    has_more_completed = total_completed_count > 4
+    
+    # Get congratulations
+    congratulations = await db.scalars(
+        select(Congratulation).where(
+            Congratulation.user_id == user.id
+        ).order_by(Congratulation.created_at.desc())
+    )
+    
+    # Calculate streak
+    await calculate_streak(user, db)
     
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "user_name": user.name,
-        "habits": habits_with_status,
-        "progress_percent": progress,
+        "habits": habits_list,
+        "completed_habits": completed_habits,
+        "has_more_completed": has_more_completed,
+        "congratulations": congratulations.all(),
+        "user": user,
+        "progress_percent": progress_percent,
         "completed": completed,
         "avg_mastery_progress": avg_mastery_progress,
         "current_streak": user.current_streak,
         "max_streak": user.max_streak,
         "today": today.strftime("%d.%m.%Y"),
-        "all_habits_completed": all_habits_completed
+        "all_habits_completed": completed == len(habits_list) if habits_list else False
     })
 
 @router.get("/login", response_class=HTMLResponse)
@@ -362,6 +385,8 @@ async def toggle_habit(request: Request, habit_id: UUID, db: AsyncSession = Depe
     if existing_tracking:
         # Если привычка уже отмечена сегодня, удаляем отметку
         await db.delete(existing_tracking)
+        # При удалении отметки уменьшаем прогресс на 1
+        habit.mastery_progress = max(0, habit.mastery_progress - 1)
     else:
         # Если привычка не отмечена, создаем новую отметку
         new_tracking = Tracking(
@@ -370,6 +395,21 @@ async def toggle_habit(request: Request, habit_id: UUID, db: AsyncSession = Depe
             date=today
         )
         db.add(new_tracking)
+        # При создании отметки увеличиваем прогресс на 1
+        habit.mastery_progress = min(100, habit.mastery_progress + 1)
+        
+        # Проверяем, достигнут ли целевой уровень освоения
+        if habit.mastery_progress >= habit.mastery_goal and not habit.is_completed:
+            habit.is_completed = True
+            
+            # Создаем поздравление
+            congratulation = Congratulation(
+                id=UUID(str(uuid.uuid4())),
+                user_id=user.id,
+                message=f"Поздравляем! Вы достигли целевого уровня освоения привычки '{habit.name}'! 🎉",
+                type="mastery_goal_achieved"
+            )
+            db.add(congratulation)
     
     await db.commit()
     
@@ -505,3 +545,29 @@ async def update_settings(
 
     await db.commit()
     return RedirectResponse(url="/settings", status_code=303)
+
+@router.post("/habit/{habit_id}/edit", response_class=HTMLResponse)
+async def edit_habit(
+    request: Request,
+    habit_id: UUID,
+    description: str = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    # TODO: Временное решение - используем первого пользователя
+    user = await db.scalar(select(User).limit(1))
+    if not user:
+        raise HTTPException(status_code=404, detail="No users found in database")
+    
+    # Проверяем существование привычки
+    habit = await db.scalar(
+        select(Habit).where(Habit.id == habit_id)
+    )
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    
+    # Обновляем описание привычки
+    habit.description = description
+    await db.commit()
+    
+    # Редиректим обратно на страницу привычки
+    return RedirectResponse(url=f"/habit/{habit_id}", status_code=303)

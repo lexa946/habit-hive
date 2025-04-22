@@ -24,6 +24,7 @@ class User(Base):
     habits: Mapped[list["Habit"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     trackings: Mapped[list["Tracking"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     settings: Mapped["UserSettings"] = relationship(back_populates="user")
+    congratulations: Mapped[list["Congratulation"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     team: Mapped["Team"] = relationship(back_populates="members", foreign_keys=[team_id])
     teams: Mapped[list["Team"]] = relationship(back_populates="owner", foreign_keys="[Team.owner_id]")

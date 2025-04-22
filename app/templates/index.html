@@ -4,134 +4,221 @@
     Habit Hive
 {% endblock %}
 
-{% block Body %}
-<div class="animate-fade-in">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-        <div class="mb-4 md:mb-0">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                Привет, {{ user_name }} 👋
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">
-                Сегодня {{ today }}. Отметьте выполненные привычки
-            </p>
-        </div>
-        <a href="/habits/new"
-           class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm hover:shadow-md">
-            <i class="fas fa-plus mr-2"></i>
-            <span>Добавить привычку</span>
-        </a>
-    </div>
+{% block extra_css %}
+<style>
+@keyframes confetti {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
 
-    <!-- Stats Section -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Progress Card with Bar -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 md:col-span-3">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center space-x-4">
-                    <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                        <i class="fas fa-chart-line text-2xl text-blue-500 dark:text-blue-400"></i>
+@keyframes trophy-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+.celebration-modal {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.trophy-icon {
+    animation: trophy-bounce 1s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.achievement-badge {
+    background: linear-gradient(45deg, #ffd700, #ffa500);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+</style>
+{% endblock %}
+
+{% block Body %}
+<div class="container mx-auto px-4 py-8">
+    <div class="animate-fade-in">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                    Привет, {{ user_name }} 👋
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">
+                    Сегодня {{ today }}. Отметьте выполненные привычки
+                </p>
+            </div>
+            <a href="/habits/new"
+               class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+                <i class="fas fa-plus mr-2"></i>
+                <span>Добавить привычку</span>
+            </a>
+        </div>
+
+        <!-- Congratulations Section -->
+        {% if congratulations %}
+        <div class="bg-green-50 dark:bg-green-900 rounded-xl shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold text-green-800 dark:text-green-200 mb-4">
+                Поздравления 🎉
+            </h2>
+            <div class="space-y-4">
+                {% for congratulation in congratulations %}
+                <div class="bg-white dark:bg-green-800 rounded-lg p-4 shadow-sm">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-trophy text-yellow-500 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-900 dark:text-green-200">
+                                {{ congratulation.message }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-green-400 mt-1">
+                                {{ congratulation.created_at.strftime('%d.%m.%Y %H:%M') }}
+                            </p>
+                        </div>
                     </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Stats Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Progress Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
                     <div>
                         <p class="text-sm text-gray-600 dark:text-gray-400">Прогресс на сегодня</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">
                             {{ progress_percent }}%
                         </p>
                     </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ completed }} из {{ habits|length }}
+                    </div>
                 </div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">
-                    Выполнено {{ completed }} из {{ habits|length }} привычек
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-500" style="width: {{ progress_percent }}%"></div>
                 </div>
             </div>
-            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
-                <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
-                     style="width: {{ progress_percent }}%"></div>
-            </div>
-        </div>
 
-        <!-- Current Streak Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-full {% if all_habits_completed %}bg-orange-100 dark:bg-orange-900{% else %}bg-green-100 dark:bg-green-900{% endif %} flex items-center justify-center">
-                    <i class="fas fa-fire text-2xl {% if all_habits_completed %}text-orange-500 dark:text-orange-400{% else %}text-green-500 dark:text-green-400{% endif %}"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Текущая серия</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                        {{ current_streak|default(0) }} дней
-                    </p>
+            <!-- Streak Cards -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                        <i class="fas fa-fire text-2xl text-orange-500 dark:text-orange-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Текущая серия</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                            {{ current_streak }} дней
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Max Streak Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                    <i class="fas fa-trophy text-2xl text-purple-500 dark:text-purple-400"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Рекордная серия</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                        {{ max_streak|default(0) }} дней
-                    </p>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                        <i class="fas fa-trophy text-2xl text-purple-500 dark:text-purple-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Рекордная серия</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                            {{ max_streak }} дней
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Average Progress Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
-                    <i class="fas fa-star text-2xl text-yellow-500 dark:text-yellow-400"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Средний прогресс</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                        {{ avg_mastery_progress }}%
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
+        <!-- Active Habits Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                Твои привычки на сегодня
+            </h2>
 
-    <!-- Habits Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-            Твои привычки на сегодня
-        </h2>
-
-        <div class="space-y-4">
-            {% for habit in habits %}
-            <div class="group flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                <div class="flex-1">
-                    <div class="flex items-center justify-between mb-2">
+            <div class="space-y-4">
+                {% for habit in habits %}
+                <div class="group flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                    <span class="flex items-center space-x-3">
                         <span class="{% if habit.completed %}line-through text-gray-400 dark:text-gray-500{% else %}text-gray-900 dark:text-white{% endif %}">
                             {{ habit.name }}
                         </span>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ habit.mastery_progress }}% освоено
+                    </span>
+                    <form method="post" action="/toggle/{{ habit.id }}" class="flex-shrink-0">
+                        <button type="submit"
+                                class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 transition-all duration-200
+                                {% if habit.completed %}bg-green-500 text-white border-green-500{% else %}hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+                            {% if habit.completed %}
+                                <i class="fas fa-check"></i>
+                            {% else %}
+                                <i class="fas fa-check opacity-0 group-hover:opacity-100 transition-opacity duration-200"></i>
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Completed Habits Section -->
+        {% if completed_habits %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    Завершенные привычки
+                </h2>
+                {% if has_more_completed %}
+                <a href="/habits?completed=true" 
+                   class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200">
+                    Все завершенные привычки →
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="space-y-4">
+                {% for habit in completed_habits %}
+                <div class="group flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-4 opacity-75">
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-gray-400 dark:text-gray-500">
+                                {{ habit.name }}
+                            </span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                100% освоено
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                            <div class="bg-green-500 h-1.5 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 ml-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            Завершено
                         </span>
                     </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
-                        <div class="bg-green-500 h-1.5 rounded-full transition-all duration-500"
-                             style="width: {{ habit.mastery_progress }}%"></div>
-                    </div>
                 </div>
-                <form method="post" action="/toggle/{{ habit.id }}" class="flex-shrink-0 ml-4">
-                    <button type="submit"
-                            class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 transition-all duration-200
-                            {% if habit.completed %}bg-green-500 text-white border-green-500{% else %}hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
-                        {% if habit.completed %}
-                            <i class="fas fa-check"></i>
-                        {% else %}
-                            <i class="fas fa-check opacity-0 group-hover:opacity-100 transition-opacity duration-200"></i>
-                        {% endif %}
-                    </button>
-                </form>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

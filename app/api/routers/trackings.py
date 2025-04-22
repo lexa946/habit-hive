@@ -36,6 +36,25 @@ async def create_tracking(tracking_data: TrackingCreate, db: AsyncSession = Depe
         date=tracking_data.date,
     )
     db.add(tracking)
+    
+    # Обновляем прогресс привычки
+    trackings = await db.scalars(select(Tracking).where(Tracking.habit_id == habit.id))
+    trackings_list = trackings.all()
+    
+    if habit.target_date:
+        total_days = (habit.target_date - habit.created_at.date()).days
+        if total_days > 0:
+            progress = min(100, int((len(trackings_list) / total_days) * 100))
+            habit.mastery_progress = progress
+    else:
+        total_days = 30
+        progress = min(100, int((len(trackings_list) / total_days) * 100))
+        habit.mastery_progress = progress
+    
+    # Проверяем, достигнута ли цель освоения
+    if habit.mastery_progress >= habit.mastery_goal:
+        habit.is_completed = True
+    
     await db.commit()
     await db.refresh(tracking)
 

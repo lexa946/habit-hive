@@ -15,25 +15,12 @@
         </a>
 
         <!-- Habit Header -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-            <div class="flex items-center justify-between mb-2">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
                     {{ habit.name }}
                 </h1>
-                {% if habit.is_completed %}
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    Привычка завершена
-                </span>
-                {% endif %}
             </div>
-            <p class="text-gray-600 dark:text-gray-400">
-                {% if habit.is_completed %}
-                    Вы успешно овладели этой привычкой!
-                {% else %}
-                    Отслеживайте прогресс выполнения привычки
-                {% endif %}
-            </p>
         </div>
 
         <!-- Habit Stats -->
@@ -91,16 +78,24 @@
             </div>
         </div>
 
-        {% if habit.description %}
+        <!-- Description -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Описание
-            </h2>
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Описание
+                </h2>
+                <button onclick="openEditModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </div>
             <p class="text-gray-600 dark:text-gray-400">
-                {{ habit.description }}
+                {% if habit.description %}
+                    {{ habit.description }}
+                {% else %}
+                    <span class="text-gray-400 dark:text-gray-500 italic">Описание отсутствует</span>
+                {% endif %}
             </p>
         </div>
-        {% endif %}
 
         <!-- Participants -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
@@ -153,4 +148,46 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Редактировать привычку</h3>
+            <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form method="post" action="/habit/{{ habit.id }}/edit">
+            <div class="mb-4">
+                <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Описание
+                </label>
+                <textarea id="description" name="description" rows="3"
+                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                          required>{{ habit.description }}</textarea>
+            </div>
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeEditModal()"
+                        class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    Отмена
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Сохранить
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditModal() {
+    document.getElementById('editModal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+}
+</script>
 {% endblock %}
