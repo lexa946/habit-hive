@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Команды - Habit Hive
+{% endblock %}
+
+{% block Body %}
+<div class="animate-fade-in">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div class="mb-4 md:mb-0">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Мои команды
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">
+                Управление командами и участие в них
+            </p>
+        </div>
+        <a href="/teams/new"
+           class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+            <i class="fas fa-plus mr-2"></i>
+            <span>Создать команду</span>
+        </a>
+    </div>
+
+    <!-- Teams Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for team in teams %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                        {{ team.name }}
+                    </h2>
+                    {% if team.is_owner %}
+                    <span class="px-3 py-1 text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">
+                        Владелец
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                    {{ team.description }}
+                </p>
+
+                <div class="flex items-center space-x-2 mb-4">
+                    <i class="fas fa-users text-gray-400"></i>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                        {{ team.members_count }} участников
+                    </span>
+                </div>
+
+                <div class="flex items-center space-x-2 mb-6">
+                    <i class="fas fa-fire text-orange-500"></i>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                        Общий стрик: {{ team.streak }} дней
+                    </span>
+                </div>
+
+                <div class="flex justify-between">
+                    <a href="/team/{{ team.id }}"
+                       class="px-4 py-2 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors duration-200">
+                        Открыть
+                    </a>
+                    {% if team.is_owner %}
+                    <button onclick="leaveTeam('{{ team.id }}')"
+                            class="px-4 py-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200">
+                        Удалить
+                    </button>
+                    {% else %}
+                    <button onclick="leaveTeam('{{ team.id }}')"
+                            class="px-4 py-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200">
+                        Покинуть
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function leaveTeam(teamId) {
+    if (confirm('Вы уверены, что хотите покинуть команду?')) {
+        fetch(`/teams/${teamId}/leave`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+</script>
+{% endblock %} 

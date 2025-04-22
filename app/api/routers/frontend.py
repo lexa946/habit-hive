@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, or_
 from uuid import UUID
 from datetime import datetime, timedelta, date
 import uuid
@@ -13,6 +13,7 @@ from app.models.habit import Habit
 from app.models.tracking import Tracking
 from app.models.user_settings import UserSettings
 from app.models.congratulation import Congratulation
+from app.models.team import Team
 from app.database import get_db
 
 router = APIRouter(tags=["Фронт"])
@@ -583,3 +584,97 @@ async def edit_habit(
     
     # Редиректим обратно на страницу привычки
     return RedirectResponse(url=f"/habit/{habit_id}", status_code=303)
+
+@router.get("/teams", response_class=HTMLResponse)
+async def teams_page(request: Request, db: AsyncSession = Depends(get_db)):
+    # TODO: Временное решение - используем первого пользователя
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Получаем команды пользователя
+    teams = await db.scalars(
+        select(Team).where(
+            or_(
+                Team.owner_id == user.id,
+                Team.members.any(User.id == user.id)
+            )
+        )
+    )
+    teams_list = teams.all()
+
+    # Формируем данные для шаблона
+    teams_data = []
+    for team in teams_list:
+        members_count = len(team.members)
+        streak = sum(member.current_streak for member in team.members)
+        teams_data.append({
+            "id": team.id,
+            "name": team.name,
+            "description": team.description,
+            "members_count": members_count,
+            "streak": streak,
+            "is_owner": team.owner_id == user.id
+        })
+
+    return templates.TemplateResponse(
+        "teams.html",
+        {
+            "request": request,
+            "teams": teams_data
+        }
+    )
+
+@router.get("/teams/new", response_class=HTMLResponse)
+async def new_team_page(request: Request):
+    return templates.TemplateResponse(
+        "team_new.html",
+        {"request": request}
+    )
+
+@router.post("/teams/new", response_class=RedirectResponse)
+async def create_team(
+    request: Request,
+    name: str = Form(...),
+    description: str = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    # TODO: Временное решение - используем первого пользователя
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    team = Team(
+        name=name,
+        description=description,
+        owner_id=user.id
+    )
+    db.add(team)
+    await db.commit()
+
+    return RedirectResponse(url="/teams", status_code=303)
+
+@router.post("/teams/{team_id}/leave", response_class=RedirectResponse)
+async def leave_team(
+    request: Request,
+    team_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    # TODO: Временное решение - используем первого пользователя
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    team = await db.scalar(select(Team).where(Team.id == team_id))
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if team.owner_id == user.id:
+        # Если пользователь владелец, удаляем команду
+        await db.delete(team)
+    else:
+        # Иначе просто удаляем пользователя из команды
+        user.team_id = None
+
+    await db.commit()
+    return RedirectResponse(url="/teams", status_code=303)
