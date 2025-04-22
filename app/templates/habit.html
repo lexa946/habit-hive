@@ -84,9 +84,11 @@
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Описание
                 </h2>
+                {% if not habit.is_completed %}
                 <button onclick="openEditModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                     <i class="fas fa-edit"></i>
                 </button>
+                {% endif %}
             </div>
             <p class="text-gray-600 dark:text-gray-400">
                 {% if habit.description %}
@@ -115,6 +117,7 @@
         </div>
 
         <!-- Complete Button -->
+        {% if not habit.is_completed %}
         <div class="text-center space-y-4">
             <form method="post" action="/habit/{{ habit.id }}/complete">
                 <button type="submit"
@@ -135,7 +138,6 @@
                 </button>
             </form>
 
-            {% if not habit.is_completed %}
             <form method="post" action="/habit/{{ habit.id }}/complete-permanently" 
                   onsubmit="return confirm('Вы уверены, что хотите полностью завершить эту привычку? Это действие нельзя отменить.')">
                 <button type="submit"
@@ -144,8 +146,8 @@
                     <span>Полностью завершить привычку</span>
                 </button>
             </form>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 </div>
 

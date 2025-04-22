@@ -80,27 +80,29 @@
                 <div class="group bg-gray-50 dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden opacity-75">
                     <div class="p-6">
                         <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-2 mb-2">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-gray-400 dark:text-gray-500 truncate max-w-[200px]">
                                         {{ habit.name }}
-                                    </h3>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                        <i class="fas fa-check-circle mr-1"></i>
-                                        Завершено
                                     </span>
+                                    <span class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap ml-4">
+                                        {{ habit.mastery_progress }}% освоено
+                                    </span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: {{ habit.mastery_progress }}%"></div>
                                 </div>
                             </div>
                             <a href="/habit/{{ habit.id }}"
-                               class="ml-4 p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-                                <i class="fas fa-arrow-right"></i>
+                               class="ml-4 p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex-shrink-0">
+                                <i class="fas fa-eye"></i>
                             </a>
                         </div>
                     </div>
                     <div class="px-6 py-4 bg-gray-100 dark:bg-gray-600">
                         <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-                            <span>Создано</span>
-                            <span class="font-medium">{{ habit.created_at.strftime('%d.%m.%Y') }}</span>
+                            <span>Завершено</span>
+                            <span class="font-medium">{{ habit.completed_at.strftime('%d.%m.%Y') }}</span>
                         </div>
                     </div>
                 </div>

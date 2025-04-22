@@ -200,9 +200,14 @@
                             <span class="text-gray-400 dark:text-gray-500">
                                 {{ habit.name }}
                             </span>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">
-                                100% освоено
-                            </span>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    Завершено {{ habit.completed_at.strftime('%d.%m.%Y') }}
+                                </span>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    100% освоено
+                                </span>
+                            </div>
                         </div>
                         <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                             <div class="bg-green-500 h-1.5 rounded-full" style="width: 100%"></div>

@@ -148,7 +148,7 @@ async def index(request: Request, db: AsyncSession = Depends(get_db)):
                 Habit.user_id == user.id,
                 Habit.is_completed == True
             )
-        ).order_by(Habit.created_at.desc()).limit(4)
+        ).order_by(Habit.completed_at.desc()).limit(4)
     )
     completed_habits = completed_habits_query.all()
     
@@ -401,6 +401,7 @@ async def toggle_habit(request: Request, habit_id: UUID, db: AsyncSession = Depe
         # Проверяем, достигнут ли целевой уровень освоения
         if habit.mastery_progress >= habit.mastery_goal and not habit.is_completed:
             habit.is_completed = True
+            habit.completed_at = today
             
             # Создаем поздравление
             congratulation = Congratulation(
@@ -475,6 +476,17 @@ async def complete_habit_permanently(request: Request, habit_id: UUID, db: Async
     
     # Отмечаем привычку как полностью завершенную
     habit.is_completed = True
+    habit.completed_at = datetime.now().date()
+    
+    # Создаем поздравление
+    congratulation = Congratulation(
+        id=UUID(str(uuid.uuid4())),
+        user_id=user.id,
+        message=f"Поздравляем! Вы завершили привычку '{habit.name}'! 🎉",
+        type="habit_completed"
+    )
+    db.add(congratulation)
+    
     await db.commit()
     
     # Редиректим на страницу привычек
