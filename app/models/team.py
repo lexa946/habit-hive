@@ -11,6 +11,7 @@ class Team(Base):
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str]
+    description: Mapped[str | None] = mapped_column(nullable=True)
     owner_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 

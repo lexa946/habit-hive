@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, or_
+from sqlalchemy.orm import selectinload
 from uuid import UUID
 from datetime import datetime, timedelta, date
 import uuid
@@ -592,28 +593,29 @@ async def teams_page(request: Request, db: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Получаем команды пользователя
-    teams = await db.scalars(
-        select(Team).where(
+    # Получаем команды пользователя с загрузкой связанных данных
+    stmt = (
+        select(Team, func.count(User.id).label("members_count"), func.sum(User.current_streak).label("total_streak"))
+        .outerjoin(User, User.team_id == Team.id)
+        .where(
             or_(
                 Team.owner_id == user.id,
                 Team.members.any(User.id == user.id)
             )
         )
+        .group_by(Team.id)
     )
-    teams_list = teams.all()
-
-    # Формируем данные для шаблона
+    
+    result = await db.execute(stmt)
     teams_data = []
-    for team in teams_list:
-        members_count = len(team.members)
-        streak = sum(member.current_streak for member in team.members)
+    
+    for team, members_count, total_streak in result:
         teams_data.append({
             "id": team.id,
             "name": team.name,
             "description": team.description,
-            "members_count": members_count,
-            "streak": streak,
+            "members_count": members_count or 0,
+            "streak": total_streak or 0,
             "is_owner": team.owner_id == user.id
         })
 
@@ -678,3 +680,170 @@ async def leave_team(
 
     await db.commit()
     return RedirectResponse(url="/teams", status_code=303)
+
+@router.get("/teams/join", response_class=HTMLResponse)
+async def join_team_page(request: Request, db: AsyncSession = Depends(get_db)):
+    # Получаем все команды, в которых пользователь не состоит
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Получаем все команды с подсчетом участников и общего стрика
+    stmt = (
+        select(Team, func.count(User.id).label("members_count"), func.sum(User.current_streak).label("total_streak"))
+        .outerjoin(User, User.team_id == Team.id)
+        .where(
+            and_(
+                Team.id != user.team_id,  # Исключаем команду, в которой пользователь уже состоит
+                Team.owner_id != user.id,  # Исключаем команды, где пользователь владелец
+            )
+        )
+        .group_by(Team.id)
+    )
+    
+    result = await db.execute(stmt)
+    teams_data = []
+    
+    for team, members_count, total_streak in result:
+        teams_data.append({
+            "id": team.id,
+            "name": team.name,
+            "description": team.description,
+            "members_count": members_count or 0,
+            "streak": total_streak or 0
+        })
+
+    return templates.TemplateResponse(
+        "teams_join.html",
+        {
+            "request": request,
+            "teams": teams_data
+        }
+    )
+
+@router.get("/teams/search", response_class=HTMLResponse)
+async def search_teams(
+    request: Request,
+    q: str,
+    db: AsyncSession = Depends(get_db)
+):
+    # Получаем текущего пользователя
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Получаем все команды с подсчетом участников и общего стрика
+    stmt = (
+        select(
+            Team,
+            func.count(User.id).label("members_count"),
+            func.sum(User.current_streak).label("total_streak")
+        )
+        .outerjoin(User, or_(
+            User.team_id == Team.id,  # Участники команды
+            User.id == Team.owner_id  # Владелец команды
+        ))
+        .where(
+            and_(
+                Team.id != user.team_id,  # Исключаем команду, в которой пользователь уже состоит
+                Team.name.ilike(f"%{q}%")  # Поиск по имени
+            )
+        )
+        .group_by(Team.id)
+    )
+    
+    result = await db.execute(stmt)
+    teams_data = []
+    
+    for team, members_count, total_streak in result:
+        teams_data.append({
+            "id": team.id,
+            "name": team.name,
+            "description": team.description,
+            "members_count": members_count or 1,  # Минимум 1 участник (владелец)
+            "streak": total_streak or 0,
+            "is_owner": team.owner_id == user.id,  # Является ли пользователь владельцем
+            "is_member": team.id == user.team_id  # Является ли пользователь участником
+        })
+
+    return templates.TemplateResponse(
+        "teams_join.html",
+        {
+            "request": request,
+            "teams": teams_data,
+            "search_query": q
+        }
+    )
+
+@router.post("/teams/{team_id}/join", response_class=RedirectResponse)
+async def join_team(
+    request: Request,
+    team_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    # TODO: Временное решение - используем первого пользователя
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    team = await db.scalar(select(Team).where(Team.id == team_id))
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    # Проверяем, что пользователь не состоит уже в команде
+    if user.team_id:
+        raise HTTPException(status_code=400, detail="User is already in a team")
+
+    # Присоединяем пользователя к команде
+    user.team_id = team.id
+    db.add(user)
+    await db.commit()
+
+    return RedirectResponse(url="/teams", status_code=303)
+
+@router.get("/team/{team_id}", response_class=HTMLResponse)
+async def team_detail(
+    request: Request,
+    team_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    # Получаем текущего пользователя
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Получаем команду с участниками и привычками
+    stmt = (
+        select(Team)
+        .options(
+            selectinload(Team.members),
+            selectinload(Team.habits)
+        )
+        .where(Team.id == team_id)
+    )
+    team = await db.scalar(stmt)
+    
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    # Проверяем, является ли пользователь владельцем или участником команды
+    is_owner = team.owner_id == user.id
+    is_member = user in team.members
+
+    if not (is_owner or is_member):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Подсчитываем количество выполненных привычек для каждого участника
+    for habit in team.habits:
+        completed_count = sum(1 for member in team.members if habit in member.habits)
+        habit.completed_count = completed_count
+
+    return templates.TemplateResponse(
+        "team_detail.html",
+        {
+            "request": request,
+            "team": team,
+            "is_owner": is_owner,
+            "is_member": is_member
+        }
+    )

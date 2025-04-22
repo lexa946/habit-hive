@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Найти команду - Habit Hive
+{% endblock %}
+
+{% block Body %}
+<div class="animate-fade-in">
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Найти команду
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">
+                Присоединитесь к существующей команде или создайте свою
+            </p>
+        </div>
+
+        <!-- Search Form -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+            <form action="/teams/search" method="GET" class="space-y-4">
+                <div>
+                    <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Поиск команд
+                    </label>
+                    <div class="flex space-x-4">
+                        <input type="text" id="search" name="q" 
+                               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                               placeholder="Введите название команды">
+                        <button type="submit"
+                                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+                            Найти
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Available Teams -->
+        <div class="space-y-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                Доступные команды
+            </h2>
+
+            {% if teams %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for team in teams %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                                {{ team.name }}
+                            </h3>
+                            <span class="px-3 py-1 text-sm bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-full">
+                                {{ team.members_count }} участников
+                            </span>
+                        </div>
+                        
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            {{ team.description }}
+                        </p>
+
+                        <div class="flex items-center space-x-2 mb-4">
+                            <i class="fas fa-fire text-orange-500"></i>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">
+                                Общий стрик: {{ team.streak }} дней
+                            </span>
+                        </div>
+
+                        {% if team.is_owner or team.is_member %}
+                            <a href="/team/{{ team.id }}"
+                               class="block w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-center">
+                                Открыть
+                            </a>
+                        {% else %}
+                            <button onclick="joinTeam('{{ team.id }}')"
+                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                                Присоединиться
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Команды не найдены. Попробуйте изменить параметры поиска.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function joinTeam(teamId) {
+    if (confirm('Вы уверены, что хотите присоединиться к этой команде?')) {
+        fetch(`/teams/${teamId}/join`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = '/teams';
+            }
+        });
+    }
+}
+</script>
+{% endblock %} 
