@@ -16,6 +16,7 @@ class Habit(Base):
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     team_id: Mapped[str | None] = mapped_column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    is_completed: Mapped[bool] = mapped_column(default=False)
 
     user: Mapped["User"] = relationship(back_populates="habits")
     team: Mapped["Team"] = relationship(back_populates="habits", lazy="joined")

@@ -22,9 +22,14 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="No users found in database")
     
-    # Получаем все привычки пользователя
+    # Получаем все активные привычки пользователя (не завершенные)
     habits = await db.scalars(
-        select(Habit).where(Habit.user_id == user.id)
+        select(Habit).where(
+            and_(
+                Habit.user_id == user.id,
+                Habit.is_completed == False
+            )
+        )
     )
     habits_list = habits.all()
     
@@ -274,3 +279,24 @@ async def complete_habit(request: Request, habit_id: UUID, db: AsyncSession = De
     
     # Редиректим обратно на страницу привычки
     return RedirectResponse(url=f"/habit/{habit_id}", status_code=303)
+
+@router.post("/habit/{habit_id}/complete-permanently", response_class=HTMLResponse)
+async def complete_habit_permanently(request: Request, habit_id: UUID, db: AsyncSession = Depends(get_db)):
+    # TODO: Временное решение - используем первого пользователя
+    user = await db.scalar(select(User).limit(1))
+    if not user:
+        raise HTTPException(status_code=404, detail="No users found in database")
+    
+    # Проверяем существование привычки
+    habit = await db.scalar(
+        select(Habit).where(Habit.id == habit_id)
+    )
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    
+    # Отмечаем привычку как полностью завершенную
+    habit.is_completed = True
+    await db.commit()
+    
+    # Редиректим на страницу привычек
+    return RedirectResponse(url="/habits", status_code=303)

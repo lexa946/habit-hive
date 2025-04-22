@@ -6,81 +6,130 @@
 
 {% block Body %}
 <div class="animate-fade-in">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
                 Мои привычки
             </h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">
-                Управляйте своими привычками и отслеживайте прогресс
-            </p>
+            <a href="/habits/new"
+               class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>
+                <span>Добавить привычку</span>
+            </a>
         </div>
-        <a href="/habits/new"
-           class="mt-4 md:mt-0 inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm hover:shadow-md">
-            <i class="fas fa-plus mr-2"></i>
-            <span>Добавить привычку</span>
-        </a>
-    </div>
 
-    <!-- Habits Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for habit in habits %}
-        <div class="group bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-            <div class="p-6">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            {{ habit.name }}
-                        </h3>
-                        {% if habit.description %}
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            {{ habit.description }}
-                        </p>
-                        {% endif %}
-                        <div class="flex items-center space-x-2">
-                            <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                <div class="bg-green-500 h-2 rounded-full transition-all duration-500"
-                                     style="width: 0%"></div>
+        <!-- Active Habits -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Активные привычки
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for habit in habits %}
+                {% if not habit.is_completed %}
+                <div class="group bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                    {{ habit.name }}
+                                </h3>
+                                {% if habit.description %}
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                    {{ habit.description }}
+                                </p>
+                                {% endif %}
+                                <div class="flex items-center space-x-2">
+                                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full transition-all duration-500"
+                                             style="width: 0%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium text-green-600 dark:text-green-400">
+                                        0%
+                                    </span>
+                                </div>
                             </div>
-                            <span class="text-sm font-medium text-green-600 dark:text-green-400">
-                                0%
-                            </span>
+                            <a href="/habit/{{ habit.id }}"
+                               class="ml-4 p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
                         </div>
                     </div>
-                    <a href="/habit/{{ habit.id }}"
-                       class="ml-4 p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
+                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700">
+                        <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                            <span>Создано</span>
+                            <span class="font-medium">{{ habit.created_at.strftime('%d.%m.%Y') }}</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-100 dark:border-gray-600">
-                <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-                    <span>Создано</span>
-                    <span class="font-medium">{{ habit.created_at.strftime('%d.%m.%Y') }}</span>
-                </div>
+                {% endif %}
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
-    </div>
 
-    {% if not habits %}
-    <div class="text-center py-12">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-            <i class="fas fa-list-check text-2xl text-gray-400 dark:text-gray-500"></i>
+        <!-- Completed Habits -->
+        <div>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Завершенные привычки
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for habit in habits %}
+                {% if habit.is_completed %}
+                <div class="group bg-gray-50 dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden opacity-75">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                        {{ habit.name }}
+                                    </h3>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Завершено
+                                    </span>
+                                </div>
+                                {% if habit.description %}
+                                <p class="text-sm text-gray-600 dark:text-gray-400">
+                                    {{ habit.description }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            <a href="/habit/{{ habit.id }}"
+                               class="ml-4 p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-100 dark:bg-gray-600">
+                        <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                            <span>Создано</span>
+                            <span class="font-medium">{{ habit.created_at.strftime('%d.%m.%Y') }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            У вас пока нет привычек
-        </h3>
-        <p class="text-gray-600 dark:text-gray-400 mb-6">
-            Начните добавлять привычки, чтобы отслеживать свой прогресс
-        </p>
-        <a href="/habits/new"
-           class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
-            <i class="fas fa-plus mr-2"></i>
-            <span>Добавить первую привычку</span>
-        </a>
+
+        {% if not habits %}
+        <div class="text-center py-12">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
+                <i class="fas fa-list-check text-2xl text-gray-400 dark:text-gray-500"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                У вас пока нет привычек
+            </h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">
+                Начните добавлять привычки, чтобы отслеживать свой прогресс
+            </p>
+            <a href="/habits/new"
+               class="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>
+                <span>Добавить первую привычку</span>
+            </a>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 {% endblock %}
