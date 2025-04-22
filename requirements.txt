@@ -16,3 +16,4 @@ clerk-backend-api
 pyjwt
 jinja2
 python-multipart
+passlib[bcrypt]

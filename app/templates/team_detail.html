@@ -20,13 +20,19 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <span class="px-4 py-2 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-full">
-                        {{ team.members_count }} участников
+                        {{ team.members|length + 1 }} участников
                     </span>
                     {% if is_owner %}
-                    <button onclick="deleteTeam('{{ team.id }}')"
-                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200">
-                        Удалить команду
-                    </button>
+                    <div class="flex space-x-2">
+                        <button onclick="showEditTeamModal()"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            Редактировать
+                        </button>
+                        <button onclick="deleteTeam('{{ team.id }}')"
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200">
+                            Удалить команду
+                        </button>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -47,42 +53,137 @@
             </div>
         </div>
 
-        <!-- Team Members -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Участники команды
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {% for member in team.members %}
-                <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                        <span class="text-gray-600 dark:text-gray-300 font-medium">
-                            {{ member.name[0] }}
-                        </span>
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {% if is_owner %}
+            <button onclick="showNewHabitModal()"
+                    class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 text-left">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                        <i class="fas fa-plus text-green-600 dark:text-green-400"></i>
                     </div>
                     <div>
-                        <h3 class="font-medium text-gray-900 dark:text-white">
-                            {{ member.name }}
-                            {% if member.id == team.owner_id %}
-                            <span class="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 px-2 py-1 rounded-full">
-                                Создатель
-                            </span>
-                            {% endif %}
-                        </h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            Стрик: {{ member.current_streak }} дней
-                        </p>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Новая привычка</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Добавить привычку в команду</p>
                     </div>
                 </div>
-                {% endfor %}
+            </button>
+            {% endif %}
+
+            <button onclick="showInviteModal()"
+                    class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 text-left">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                        <i class="fas fa-user-plus text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Пригласить</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Добавить нового участника</p>
+                    </div>
+                </div>
+            </button>
+
+            <button onclick="showStatsModal()"
+                    class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 text-left">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                        <i class="fas fa-chart-line text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900 dark:text-white">Статистика</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Просмотр прогресса</p>
+                    </div>
+                </div>
+            </button>
+        </div>
+
+        <!-- Team Members -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    Участники команды
+                </h2>
+                {% if is_owner %}
+                <button onclick="showInviteModal()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Пригласить
+                </button>
+                {% endif %}
+            </div>
+            <div class="space-y-4">
+                <!-- Owner Section -->
+                <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Владелец команды</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+                            <span class="text-yellow-600 dark:text-yellow-400 font-medium">
+                                {{ team.owner.name[0] }}
+                            </span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900 dark:text-white">
+                                {{ team.owner.name }}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Стрик: {{ team.owner.current_streak }} дней
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Members Section -->
+                {% if team.members %}
+                <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Участники команды</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for member in team.members %}
+                        <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                    <span class="text-gray-600 dark:text-gray-300 font-medium">
+                                        {{ member.name[0] }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-900 dark:text-white">
+                                        {{ member.name }}
+                                    </h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        Стрик: {{ member.current_streak }} дней
+                                    </p>
+                                </div>
+                            </div>
+                            {% if is_owner and member.id != team.owner_id %}
+                            <button onclick="removeMember('{{ member.id }}')"
+                                    class="p-2 text-red-600 hover:text-red-700 transition-colors duration-200">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-gray-600 dark:text-gray-400">
+                        В команде пока нет других участников
+                    </p>
+                </div>
+                {% endif %}
             </div>
         </div>
 
         <!-- Team Habits -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Привычки команды
-            </h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    Привычки команды
+                </h2>
+                <button onclick="showNewHabitModal()"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                    Добавить привычку
+                </button>
+            </div>
             {% if team.habits %}
             <div class="space-y-4">
                 {% for habit in team.habits %}
@@ -96,12 +197,20 @@
                         </p>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">
-                            Выполнено: {{ habit.completed_count }}/{{ team.members_count }}
-                        </span>
-                        <div class="w-24 h-2 bg-gray-200 dark:bg-gray-600 rounded-full">
-                            <div class="h-full bg-green-500 rounded-full" style="width: {{ (habit.completed_count / team.members_count * 100)|round }}%"></div>
+                        <div class="flex flex-col items-end">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">
+                                Выполнено: {{ habit.completed_count }}/{{ team.members|length + 1 }}
+                            </span>
+                            <div class="w-24 h-2 bg-gray-200 dark:bg-gray-600 rounded-full mt-1">
+                                <div class="h-full bg-green-500 rounded-full" style="width: {{ (habit.completed_count / (team.members|length + 1) * 100)|round }}%"></div>
+                            </div>
                         </div>
+                        {% if is_owner %}
+                        <button onclick="deleteHabit('{{ habit.id }}')"
+                                class="p-2 text-red-600 hover:text-red-700 transition-colors duration-200">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -114,6 +223,159 @@
                 </p>
             </div>
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div id="editTeamModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+    <div class="fixed inset-0 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-md">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Редактировать команду</h2>
+            <form id="editTeamForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Название
+                    </label>
+                    <input type="text" name="name" value="{{ team.name }}"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Описание
+                    </label>
+                    <textarea name="description" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">{{ team.description }}</textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="hideEditTeamModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
+                        Отмена
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- New Habit Modal -->
+<div id="newHabitModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+    <div class="fixed inset-0 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-md">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Новая командная привычка</h2>
+            <form id="newHabitForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Название привычки
+                    </label>
+                    <input type="text" name="name" required
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Описание
+                    </label>
+                    <textarea name="description" rows="3" required
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Целевая дата (опционально)
+                    </label>
+                    <input type="date" name="target_date"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="hideNewHabitModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
+                        Отмена
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                        Создать
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="inviteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+    <div class="fixed inset-0 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-md">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Пригласить участника</h2>
+            <form id="inviteForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Email участника
+                    </label>
+                    <input type="email" name="email" required
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="hideInviteModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
+                        Отмена
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        Пригласить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="statsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+    <div class="fixed inset-0 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-2xl">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Статистика команды</h2>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Прогресс привычек</h3>
+                    <div class="space-y-4">
+                        {% for habit in team.habits %}
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ habit.name }}</span>
+                                <span class="text-sm text-gray-600 dark:text-gray-400">{{ habit.completed_count }}/{{ team.members|length + 1 }}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div class="bg-green-600 h-2.5 rounded-full" style="width: {{ (habit.completed_count / team.members_count * 100)|round }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Активность за неделю</h3>
+                    <div class="grid grid-cols-7 gap-2">
+                        {% for day in range(7) %}
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                {{ (now - timedelta(days=6-day)).strftime('%a') }}
+                            </div>
+                            <div class="h-24 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {{ team.daily_completions[6-day] or 0 }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="hideStatsModal()"
+                        class="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
+                    Закрыть
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -134,5 +396,141 @@ function deleteTeam(teamId) {
         });
     }
 }
+
+function removeMember(memberId) {
+    if (confirm('Вы уверены, что хотите удалить участника из команды?')) {
+        fetch(`/teams/{{ team.id }}/members/${memberId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+function deleteHabit(habitId) {
+    if (confirm('Вы уверены, что хотите удалить эту привычку?')) {
+        fetch(`/teams/{{ team.id }}/habits/${habitId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+// Modal functions
+function showEditTeamModal() {
+    document.getElementById('editTeamModal').classList.remove('hidden');
+}
+
+function hideEditTeamModal() {
+    document.getElementById('editTeamModal').classList.add('hidden');
+}
+
+function showNewHabitModal() {
+    document.getElementById('newHabitModal').classList.remove('hidden');
+}
+
+function hideNewHabitModal() {
+    document.getElementById('newHabitModal').classList.add('hidden');
+}
+
+function showInviteModal() {
+    document.getElementById('inviteModal').classList.remove('hidden');
+}
+
+function hideInviteModal() {
+    document.getElementById('inviteModal').classList.add('hidden');
+}
+
+function showStatsModal() {
+    document.getElementById('statsModal').classList.remove('hidden');
+}
+
+function hideStatsModal() {
+    document.getElementById('statsModal').classList.add('hidden');
+}
+
+// Form submissions
+document.getElementById('editTeamForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch(`/teams/{{ team.id }}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: formData.get('name'),
+            description: formData.get('description')
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+});
+
+document.getElementById('newHabitForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    // Добавляем дополнительные поля в FormData
+    formData.append('team_id', '{{ team.id }}');
+    formData.append('user_id', '{{ user.id }}');
+    formData.append('mastery_goal', '100');
+    formData.append('mastery_progress', '0');
+    formData.append('completed_at', new Date().toISOString().split('T')[0]);
+
+    fetch(`/teams/{{ team.id }}/habits`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            hideNewHabitModal();
+            window.location.reload();
+        } else {
+            response.json().then(data => {
+                alert(data.detail || 'Ошибка при создании привычки');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при создании привычки');
+    });
+});
+
+document.getElementById('inviteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch(`/teams/{{ team.id }}/invite`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            email: formData.get('email')
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+});
 </script>
 {% endblock %} 

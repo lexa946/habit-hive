@@ -20,6 +20,15 @@ from app.database import get_db
 router = APIRouter(tags=["Фронт"])
 templates = Jinja2Templates(directory="app/templates")
 
+async def get_current_user(db: AsyncSession = Depends(get_db)) -> User:
+    """Получает текущего пользователя из базы данных."""
+    # TODO: Временное решение - используем первого пользователя
+    # В будущем нужно будет получать пользователя из сессии
+    user = await db.scalar(select(User).limit(1))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 async def calculate_streak(user: User, db: AsyncSession) -> None:
     """Calculate and update user's streak based on completed habits."""
     today = datetime.now().date()
@@ -805,15 +814,10 @@ async def join_team(
 async def team_detail(
     request: Request,
     team_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    # Получаем текущего пользователя
-    user = await db.scalar(select(User))
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Получаем команду с участниками и привычками
-    stmt = (
+    team = await db.scalar(
         select(Team)
         .options(
             selectinload(Team.members),
@@ -821,29 +825,193 @@ async def team_detail(
         )
         .where(Team.id == team_id)
     )
-    team = await db.scalar(stmt)
     
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
 
     # Проверяем, является ли пользователь владельцем или участником команды
-    is_owner = team.owner_id == user.id
-    is_member = user in team.members
-
-    if not (is_owner or is_member):
+    if current_user.id != team.owner_id and current_user.team_id != team.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    # Подсчитываем количество выполненных привычек для каждого участника
+    # Подсчитываем количество выполнений для каждой привычки
+    today = datetime.now().date()
     for habit in team.habits:
-        completed_count = sum(1 for member in team.members if habit in member.habits)
-        habit.completed_count = completed_count
+        completed_count = await db.scalar(
+            select(func.count(Tracking.id))
+            .where(
+                and_(
+                    Tracking.habit_id == habit.id,
+                    Tracking.date == today
+                )
+            )
+        )
+        habit.completed_count = completed_count or 0
+
+    # Подсчитываем количество выполненных привычек для каждого участника
+    member_completions = {}
+    for member in team.members:
+        completed_count = await db.scalar(
+            select(func.count()).select_from(Tracking)
+            .where(
+                and_(
+                    Tracking.habit_id.in_(habit.id for habit in member.habits),
+                    Tracking.date >= datetime.now().date() - timedelta(days=7)
+                )
+            )
+        )
+        member_completions[member.id] = completed_count
 
     return templates.TemplateResponse(
         "team_detail.html",
         {
             "request": request,
             "team": team,
-            "is_owner": is_owner,
-            "is_member": is_member
+            "is_owner": current_user.id == team.owner_id,
+            "user": current_user,
+            "member_completions": member_completions,
+            "now": datetime.now(),
+            "timedelta": timedelta
         }
     )
+
+@router.put("/teams/{team_id}", response_class=RedirectResponse)
+async def update_team(
+    request: Request,
+    team_id: UUID,
+    name: str = Form(...),
+    description: str = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    team = await db.scalar(select(Team).where(Team.id == team_id))
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if team.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only team owner can edit team")
+
+    team.name = name
+    team.description = description
+    await db.commit()
+
+    return RedirectResponse(url=f"/team/{team_id}", status_code=303)
+
+@router.post("/teams/{team_id}/habits", response_class=RedirectResponse)
+async def create_team_habit(
+    request: Request,
+    team_id: UUID,
+    name: str = Form(...),
+    description: str = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    team = await db.scalar(select(Team).where(Team.id == team_id))
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if team.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only team owner can add habits")
+
+    habit = Habit(
+        name=name,
+        description=description,
+        team_id=team_id,
+        user_id=user.id
+    )
+    db.add(habit)
+    await db.commit()
+
+    return RedirectResponse(url=f"/team/{team_id}", status_code=303)
+
+@router.delete("/teams/{team_id}/habits/{habit_id}", response_class=RedirectResponse)
+async def delete_team_habit(
+    request: Request,
+    team_id: UUID,
+    habit_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    team = await db.scalar(select(Team).where(Team.id == team_id))
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if team.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only team owner can delete habits")
+
+    habit = await db.scalar(select(Habit).where(Habit.id == habit_id, Habit.team_id == team_id))
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+
+    await db.delete(habit)
+    await db.commit()
+
+    return RedirectResponse(url=f"/team/{team_id}", status_code=303)
+
+@router.post("/teams/{team_id}/invite", response_class=RedirectResponse)
+async def invite_member(
+    request: Request,
+    team_id: UUID,
+    email: str = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    team = await db.scalar(select(Team).where(Team.id == team_id))
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if team.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only team owner can invite members")
+
+    invited_user = await db.scalar(select(User).where(User.email == email))
+    if not invited_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if invited_user.team_id:
+        raise HTTPException(status_code=400, detail="User is already in a team")
+
+    invited_user.team_id = team_id
+    await db.commit()
+
+    return RedirectResponse(url=f"/team/{team_id}", status_code=303)
+
+@router.delete("/teams/{team_id}/members/{member_id}", response_class=RedirectResponse)
+async def remove_member(
+    request: Request,
+    team_id: UUID,
+    member_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    user = await db.scalar(select(User))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    team = await db.scalar(select(Team).where(Team.id == team_id))
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    if team.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only team owner can remove members")
+
+    member = await db.scalar(select(User).where(User.id == member_id, User.team_id == team_id))
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    if member.id == team.owner_id:
+        raise HTTPException(status_code=400, detail="Cannot remove team owner")
+
+    member.team_id = None
+    await db.commit()
+
+    return RedirectResponse(url=f"/team/{team_id}", status_code=303)

@@ -16,11 +16,12 @@ class Habit(Base):
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     team_id: Mapped[str | None] = mapped_column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    completed_at: Mapped[datetime] = mapped_column(Date)
+    completed_at: Mapped[datetime | None] = mapped_column(Date, nullable=True)
     is_completed: Mapped[bool] = mapped_column(default=False)
     target_date: Mapped[date | None] = mapped_column(nullable=True)  # Целевая дата завершения
     mastery_progress: Mapped[int] = mapped_column(default=0)  # Прогресс освоения в процентах
     mastery_goal: Mapped[int] = mapped_column(default=100)  # Целевой процент освоения
+    completed_count: Mapped[int] = mapped_column(default=0)  # Количество выполненных трекингов
 
     user: Mapped["User"] = relationship(back_populates="habits")
     team: Mapped["Team"] = relationship(back_populates="habits", lazy="joined")
