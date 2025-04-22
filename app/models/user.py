@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 
 from sqlalchemy import UUID, ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped, relationship
@@ -12,11 +12,18 @@ class User(Base):
     id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(unique=True, index=True)
     name: Mapped[str]
+    password_hash: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     team_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("teams.id"))
 
+    # Streak tracking
+    current_streak: Mapped[int] = mapped_column(default=0)  # Current streak in days
+    max_streak: Mapped[int] = mapped_column(default=0)  # Maximum streak achieved
+    last_completed_date: Mapped[date | None] = mapped_column(nullable=True)  # Last date when all habits were completed
+
     habits: Mapped[list["Habit"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     trackings: Mapped[list["Tracking"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    settings: Mapped["UserSettings"] = relationship(back_populates="user")
 
     team: Mapped["Team"] = relationship(back_populates="members", foreign_keys=[team_id])
     teams: Mapped[list["Team"]] = relationship(back_populates="owner", foreign_keys="[Team.owner_id]")

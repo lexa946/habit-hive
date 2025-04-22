@@ -1,19 +1,78 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timedelta, date
 
 from app.models.user import User
 from app.models.habit import Habit
 from app.models.tracking import Tracking
+from app.models.user_settings import UserSettings
 from app.database import get_db
 
 router = APIRouter(tags=["Фронт"])
 templates = Jinja2Templates(directory="app/templates")
+
+async def calculate_streak(user: User, db: AsyncSession) -> None:
+    """Calculate and update user's streak based on completed habits."""
+    today = datetime.now().date()
+    
+    # Initialize streak values if they are None
+    if user.current_streak is None:
+        user.current_streak = 0
+    if user.max_streak is None:
+        user.max_streak = 0
+    
+    # Get all active habits for the user
+    habits = await db.scalars(
+        select(Habit).where(
+            and_(
+                Habit.user_id == user.id,
+                Habit.is_completed == False
+            )
+        )
+    )
+    habits_list = habits.all()
+    
+    if not habits_list:
+        return
+    
+    # Get all trackings for today
+    today_trackings = await db.scalars(
+        select(Tracking).where(
+            and_(
+                Tracking.user_id == user.id,
+                Tracking.date == today
+            )
+        )
+    )
+    completed_habits_ids = {tracking.habit_id for tracking in today_trackings.all()}
+    
+    # Check if all habits are completed today
+    all_completed = all(habit.id in completed_habits_ids for habit in habits_list)
+    
+    if all_completed:
+        if user.last_completed_date is None:
+            # First completion
+            user.current_streak = 1
+            user.max_streak = max(user.max_streak, 1)
+        elif (today - user.last_completed_date).days == 1:
+            # Consecutive day
+            user.current_streak += 1
+            user.max_streak = max(user.max_streak, user.current_streak)
+        elif (today - user.last_completed_date).days > 1:
+            # Streak broken, start new streak
+            user.current_streak = 1
+        user.last_completed_date = today
+    else:
+        if user.last_completed_date and (today - user.last_completed_date).days > 1:
+            # Streak broken
+            user.current_streak = 0
+    
+    await db.commit()
 
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request, db: AsyncSession = Depends(get_db)):
@@ -21,6 +80,9 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
     user = await db.scalar(select(User).limit(1))
     if not user:
         raise HTTPException(status_code=404, detail="No users found in database")
+    
+    # Calculate streak
+    await calculate_streak(user, db)
     
     # Получаем все активные привычки пользователя (не завершенные)
     habits = await db.scalars(
@@ -88,18 +150,20 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
     completed = sum(1 for h in habits_with_status if h["completed"])
     progress = int(completed / len(habits_with_status) * 100) if habits_with_status else 0
     
-    # Вычисляем стрик (количество дней подряд с выполнением хотя бы одной привычки)
-    # TODO: Реализовать правильный подсчет стрика
-    streak = 7  # Временное значение
-
+    # Проверяем, все ли привычки выполнены сегодня
+    all_habits_completed = completed == len(habits_with_status) if habits_with_status else False
+    
     return templates.TemplateResponse("index.html", {
         "request": request,
         "user_name": user.name,
         "habits": habits_with_status,
         "progress_percent": progress,
+        "completed": completed,
         "avg_mastery_progress": avg_mastery_progress,
-        "streak": streak,
-        "today": today.strftime("%d.%m.%Y")
+        "current_streak": user.current_streak,
+        "max_streak": user.max_streak,
+        "today": today.strftime("%d.%m.%Y"),
+        "all_habits_completed": all_habits_completed
     })
 
 @router.get("/login", response_class=HTMLResponse)
@@ -205,9 +269,25 @@ async def habit_page(request: Request, habit_id: UUID, db: AsyncSession = Depend
     })
 
 @router.get("/habits/new", response_class=HTMLResponse)
-async def new_habit(request: Request):
+async def new_habit(request: Request, db: AsyncSession = Depends(get_db)):
+    # TODO: Временное решение - используем первого пользователя
+    user = await db.scalar(select(User).limit(1))
+    if not user:
+        raise HTTPException(status_code=404, detail="No users found in database")
+    
+    # Get user settings
+    user_settings = await db.scalar(
+        select(UserSettings).where(UserSettings.user_id == user.id)
+    )
+    if not user_settings:
+        raise HTTPException(status_code=404, detail="User settings not found")
+    
     return templates.TemplateResponse("habit_new.html", {
-        "request": request
+        "request": request,
+        "default_mastery_goal": user_settings.default_mastery_goal,
+        "default_period": user_settings.default_period,
+        "now": datetime.now(),
+        "timedelta": timedelta
     })
 
 @router.post("/habits/new", response_class=HTMLResponse)
@@ -216,13 +296,28 @@ async def create_habit(request: Request, db: AsyncSession = Depends(get_db)):
     name = form_data.get("name")
     description = form_data.get("description", "")
     target_date = form_data.get("target_date")
-    mastery_goal = form_data.get("mastery_goal", "100")
+    mastery_goal = form_data.get("mastery_goal")
     
     # TODO: Временное решение - используем первого пользователя
     # В будущем нужно будет получать текущего пользователя из сессии
     user = await db.scalar(select(User).limit(1))
     if not user:
         raise HTTPException(status_code=404, detail="No users found in database")
+    
+    # Get user settings
+    user_settings = await db.scalar(
+        select(UserSettings).where(UserSettings.user_id == user.id)
+    )
+    if not user_settings:
+        raise HTTPException(status_code=404, detail="User settings not found")
+    
+    # Use default mastery goal from settings if not specified
+    if not mastery_goal:
+        mastery_goal = user_settings.default_mastery_goal
+    
+    # Calculate target date if not specified using default period
+    if not target_date:
+        target_date = (datetime.now() + timedelta(days=user_settings.default_period)).strftime("%Y-%m-%d")
     
     new_habit = Habit(
         name=name,
@@ -344,3 +439,69 @@ async def complete_habit_permanently(request: Request, habit_id: UUID, db: Async
     
     # Редиректим на страницу привычек
     return RedirectResponse(url="/habits", status_code=303)
+
+@router.get("/settings", response_class=HTMLResponse)
+async def get_settings(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    # TODO: Replace with actual user when auth is implemented
+    user = await db.execute(select(User).limit(1))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    settings = await db.execute(
+        select(UserSettings).where(UserSettings.user_id == user.id)
+    )
+    settings = settings.scalar_one_or_none()
+    if not settings:
+        settings = UserSettings(user_id=user.id)
+        db.add(settings)
+        await db.commit()
+        await db.refresh(settings)
+
+    return templates.TemplateResponse(
+        "settings.html",
+        {
+            "request": request,
+            "theme": settings.theme,
+            "daily_reminder": settings.daily_reminder,
+            "reminder_time": settings.reminder_time.strftime("%H:%M"),
+            "default_mastery_goal": settings.default_mastery_goal,
+            "default_period": settings.default_period
+        }
+    )
+
+@router.post("/settings", response_class=RedirectResponse)
+async def update_settings(
+    request: Request,
+    theme: str = Form(...),
+    daily_reminder: bool = Form(False),
+    reminder_time: str = Form(...),
+    default_mastery_goal: int = Form(...),
+    default_period: int = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    # TODO: Replace with actual user when auth is implemented
+    user = await db.execute(select(User).limit(1))
+    user = user.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    settings = await db.execute(
+        select(UserSettings).where(UserSettings.user_id == user.id)
+    )
+    settings = settings.scalar_one_or_none()
+    if not settings:
+        settings = UserSettings(user_id=user.id)
+        db.add(settings)
+
+    settings.theme = theme
+    settings.daily_reminder = daily_reminder
+    settings.reminder_time = datetime.strptime(reminder_time, "%H:%M").time()
+    settings.default_mastery_goal = default_mastery_goal
+    settings.default_period = default_period
+
+    await db.commit()
+    return RedirectResponse(url="/settings", status_code=303)

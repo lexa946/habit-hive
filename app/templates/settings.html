@@ -1,0 +1,154 @@
+{% extends "index.html" %}
+
+{% block title %}
+    Настройки
+{% endblock %}
+
+{% block Body %}
+<div class="animate-fade-in">
+    <div class="max-w-3xl mx-auto">
+        <!-- Back Button -->
+        <a href="/" 
+           class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 mb-6 transition-colors duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>
+            <span>Вернуться на главную</span>
+        </a>
+
+        <!-- Settings Header -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Настройки
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">
+                Настройте параметры приложения под свои предпочтения
+            </p>
+        </div>
+
+        <!-- Settings Form -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <form method="post" action="/settings" class="space-y-6">
+                <!-- Theme Settings -->
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Внешний вид
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label for="theme" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Тема оформления
+                                </label>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Выберите светлую или темную тему
+                                </p>
+                            </div>
+                            <select id="theme" 
+                                    name="theme"
+                                    class="w-48 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                <option value="light" {% if theme == 'light' %}selected{% endif %}>Светлая</option>
+                                <option value="dark" {% if theme == 'dark' %}selected{% endif %}>Темная</option>
+                                <option value="system" {% if theme == 'system' %}selected{% endif %}>Системная</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Settings -->
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Уведомления
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label for="daily_reminder" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Ежедневное напоминание
+                                </label>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Получать напоминание о необходимости отметить привычки
+                                </p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" 
+                                       id="daily_reminder" 
+                                       name="daily_reminder"
+                                       class="sr-only peer"
+                                       {% if daily_reminder %}checked{% endif %}>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label for="reminder_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Время напоминания
+                                </label>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Установите время для ежедневного напоминания
+                                </p>
+                            </div>
+                            <input type="time" 
+                                   id="reminder_time" 
+                                   name="reminder_time"
+                                   value="{{ reminder_time }}"
+                                   class="w-48 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Habit Settings -->
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Настройки привычек
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label for="default_mastery_goal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Цель освоения по умолчанию
+                                </label>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Процент освоения для новых привычек
+                                </p>
+                            </div>
+                            <input type="number" 
+                                   id="default_mastery_goal" 
+                                   name="default_mastery_goal"
+                                   min="1"
+                                   max="100"
+                                   value="{{ default_mastery_goal }}"
+                                   class="w-48 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label for="default_period" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Период освоения по умолчанию
+                                </label>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Количество дней для освоения привычки
+                                </p>
+                            </div>
+                            <input type="number" 
+                                   id="default_period" 
+                                   name="default_period"
+                                   min="1"
+                                   value="{{ default_period }}"
+                                   class="w-48 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="flex justify-end">
+                    <button type="submit"
+                            class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-sm hover:shadow-md">
+                        <i class="fas fa-save mr-2"></i>
+                        <span>Сохранить настройки</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 
