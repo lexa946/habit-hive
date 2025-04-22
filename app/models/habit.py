@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 
 from sqlalchemy import UUID, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,6 +17,9 @@ class Habit(Base):
     team_id: Mapped[str | None] = mapped_column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     is_completed: Mapped[bool] = mapped_column(default=False)
+    target_date: Mapped[date | None] = mapped_column(nullable=True)  # Целевая дата завершения
+    mastery_progress: Mapped[int] = mapped_column(default=0)  # Прогресс освоения в процентах
+    mastery_goal: Mapped[int] = mapped_column(default=100)  # Целевой процент освоения
 
     user: Mapped["User"] = relationship(back_populates="habits")
     team: Mapped["Team"] = relationship(back_populates="habits", lazy="joined")

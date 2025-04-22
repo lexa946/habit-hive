@@ -45,17 +45,46 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
     )
     completed_habits_ids = {tracking.habit_id for tracking in today_trackings.all()}
     
-    # Формируем список привычек с информацией о выполнении
+    # Формируем список привычек с информацией о выполнении и прогрессе
     habits_with_status = []
+    total_mastery_progress = 0
+    
     for habit in habits_list:
+        # Получаем все трекинги для привычки
+        habit_trackings = await db.scalars(
+            select(Tracking).where(Tracking.habit_id == habit.id)
+        )
+        trackings_list = habit_trackings.all()
+        
+        # Вычисляем прогресс освоения для каждой привычки
+        if habit.target_date:
+            total_days = (habit.target_date - habit.created_at.date()).days
+            days_passed = (today - habit.created_at.date()).days
+            if total_days > 0:
+                progress = min(100, int((len(trackings_list) / total_days) * 100))
+                habit.mastery_progress = progress
+        else:
+            total_days = 30
+            completed_days = len(trackings_list)
+            progress = min(100, int((completed_days / total_days) * 100))
+            habit.mastery_progress = progress
+        
+        total_mastery_progress += habit.mastery_progress
+        
         habits_with_status.append({
             "id": habit.id,
             "name": habit.name,
             "description": habit.description,
-            "completed": habit.id in completed_habits_ids
+            "completed": habit.id in completed_habits_ids,
+            "mastery_progress": habit.mastery_progress
         })
     
-    # Вычисляем прогресс
+    await db.commit()
+    
+    # Вычисляем средний прогресс освоения
+    avg_mastery_progress = int(total_mastery_progress / len(habits_list)) if habits_list else 0
+    
+    # Вычисляем прогресс на сегодня
     completed = sum(1 for h in habits_with_status if h["completed"])
     progress = int(completed / len(habits_with_status) * 100) if habits_with_status else 0
     
@@ -68,6 +97,7 @@ async def home(request: Request, db: AsyncSession = Depends(get_db)):
         "user_name": user.name,
         "habits": habits_with_status,
         "progress_percent": progress,
+        "avg_mastery_progress": avg_mastery_progress,
         "streak": streak,
         "today": today.strftime("%d.%m.%Y")
     })
@@ -150,16 +180,26 @@ async def habit_page(request: Request, habit_id: UUID, db: AsyncSession = Depend
     today = datetime.now().date()
     is_completed_today = any(tracking.date == today for tracking in trackings_list)
     
-    # Вычисляем процент выполнения
-    total_days = 30  # За последние 30 дней
-    completed_days = len(trackings_list)
-    completed_percentage = int((completed_days / total_days) * 100) if total_days > 0 else 0
+    # Вычисляем прогресс освоения
+    if habit.target_date:
+        # Если есть целевая дата, считаем прогресс относительно нее
+        total_days = (habit.target_date - habit.created_at.date()).days
+        days_passed = (today - habit.created_at.date()).days
+        if total_days > 0:
+            progress = min(100, int((len(trackings_list) / total_days) * 100))
+            habit.mastery_progress = progress
+            await db.commit()
+    else:
+        # Если нет целевой даты, считаем за последние 30 дней
+        total_days = 30
+        completed_days = len(trackings_list)
+        progress = min(100, int((completed_days / total_days) * 100))
+        habit.mastery_progress = progress
+        await db.commit()
     
     return templates.TemplateResponse("habit.html", {
         "request": request,
         "habit": habit,
-        "completed_percentage": completed_percentage,
-        "total_members": 1,  # Временное значение
         "completed_by": trackings_list,
         "is_completed_today": is_completed_today
     })
@@ -175,6 +215,8 @@ async def create_habit(request: Request, db: AsyncSession = Depends(get_db)):
     form_data = await request.form()
     name = form_data.get("name")
     description = form_data.get("description", "")
+    target_date = form_data.get("target_date")
+    mastery_goal = form_data.get("mastery_goal", "100")
     
     # TODO: Временное решение - используем первого пользователя
     # В будущем нужно будет получать текущего пользователя из сессии
@@ -185,7 +227,9 @@ async def create_habit(request: Request, db: AsyncSession = Depends(get_db)):
     new_habit = Habit(
         name=name,
         description=description,
-        user_id=user.id
+        user_id=user.id,
+        target_date=datetime.strptime(target_date, "%Y-%m-%d").date() if target_date else None,
+        mastery_goal=int(mastery_goal)
     )
     
     db.add(new_habit)

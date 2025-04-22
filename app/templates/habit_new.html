@@ -50,7 +50,36 @@
                               placeholder="Добавьте описание вашей привычки"></textarea>
                 </div>
 
-                <div class="flex justify-end space-x-4">
+                <div>
+                    <label for="target_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Целевая дата (необязательно)
+                    </label>
+                    <input type="date" 
+                           id="target_date" 
+                           name="target_date"
+                           class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200">
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Укажите дату, к которой вы планируете освоить привычку
+                    </p>
+                </div>
+
+                <div>
+                    <label for="mastery_goal" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Цель освоения (%)
+                    </label>
+                    <input type="number" 
+                           id="mastery_goal" 
+                           name="mastery_goal"
+                           min="1"
+                           max="100"
+                           value="100"
+                           class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200">
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Установите целевой процент освоения привычки (по умолчанию 100%)
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-4 mt-6">
                     <a href="/habits"
                        class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
                         <span>Отмена</span>

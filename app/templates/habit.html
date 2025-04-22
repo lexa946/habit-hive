@@ -38,32 +38,44 @@
 
         <!-- Habit Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <!-- Progress -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                 <div class="flex items-center space-x-4">
                     <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                         <i class="fas fa-chart-line text-2xl text-blue-500 dark:text-blue-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Прогресс</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Прогресс освоения</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                            {{ completed_percentage }}%
+                            {{ habit.mastery_progress }}%
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Цель: {{ habit.mastery_goal }}%
                         </p>
                     </div>
                 </div>
             </div>
+
+            <!-- Target Date -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                 <div class="flex items-center space-x-4">
-                    <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-                        <i class="fas fa-fire text-2xl text-orange-500 dark:text-orange-400"></i>
+                    <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-2xl text-purple-500 dark:text-purple-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Выполнено дней</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Целевая дата</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                            {{ completed_by|length }} дней
+                            {% if habit.target_date %}
+                                {{ habit.target_date.strftime('%d.%m.%Y') }}
+                            {% else %}
+                                Не указана
+                            {% endif %}
                         </p>
                     </div>
                 </div>
             </div>
+
+            <!-- Created Date -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                 <div class="flex items-center space-x-4">
                     <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
